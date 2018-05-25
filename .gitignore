@@ -1,0 +1,35 @@
+# Ignore the vendor directory, which is currently some 13M of
+# .go files alone. This means that fresh clones will need to run
+# `dep ensure` before things will just work, but that should be
+# fine.
+vendor/
+# ignore the chaosnode exec, built in the cmd/chaosnode directory
+cmd/chaosnode/chaosnode
+
+# Ignore coverage files
+**/coverage.*
+
+## https://github.com/github/gitignore/blob/master/Go.gitignore
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Docker keyfile
+# This is a keyfile with which docker can read ndau repositories.
+docker_keyfile_rsa
+github_chaos_deploy
+
+# Editor customization
+.vscode/
+
+# OSX
+.DS_Store
