@@ -92,6 +92,11 @@ func NewApp(dbSpec string, name string, state State) (*App, error) {
 	}, nil
 }
 
+// GetLogger returns the application logger
+func (app *App) GetLogger() log.Logger {
+	return app.logger
+}
+
 // SetLogger sets the logger to be used by this app
 func (app *App) SetLogger(logger log.Logger) {
 	app.logger = logger
