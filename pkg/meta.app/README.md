@@ -9,7 +9,7 @@ The purpose of this package is to abstract that interface's implementation.
 - [ ] subclass the meta-application:
 
     ```go
-    import meta "github.com/oneir-ndev/metanode/pkg/meta.app"
+    import meta "github.com/oneiro-ndev/metanode/pkg/meta.app"
     type MyApp struct {
         *meta.App
         ...
@@ -24,10 +24,9 @@ The purpose of this package is to abstract that interface's implementation.
     ```go
     func (m *MyApp) NewApp(...) (*MyApp, error) {
         ...
-        app := &MyApp{
+        return &MyApp{
             meta.NewApp(spec, name, state),
             ...
-        }
-        return app, nil
+        }, nil
     }
     ```
