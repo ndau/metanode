@@ -92,6 +92,11 @@ func NewApp(dbSpec string, name string, state State) (*App, error) {
 	}, nil
 }
 
+// GetState returns the current application state
+func (app *App) GetState() State {
+	return app.state
+}
+
 // GetLogger returns the application logger
 func (app *App) GetLogger() log.Logger {
 	return app.logger
