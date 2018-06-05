@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
-	abci "github.com/tendermint/abci/types"
 	"github.com/tinylib/msgp/msgp"
 )
 
@@ -33,13 +32,27 @@ type Transactable interface {
 	msgp.Unmarshaler
 
 	// IsValid returns nil if the Transactable is valid, or an error otherwise.
-	IsValid(app abci.Application) error
+	//
+	// `app` will always be an instance of your app; it is expected that the
+	// first line of most implementations will be
+	//
+	// ```go
+	// app := appInt.(*MyApp)
+	// ````
+	IsValid(app interface{}) error
 	// Apply applies this transaction to the supplied application, updating its
 	// internal state as required.
 	//
 	// If anything but nil is returned, the internal state of the input App
 	// must be unchanged.
-	Apply(app abci.Application) error
+	//
+	// `app` will always be an instance of your app; it is expected that the
+	// first line of most implementations will be
+	//
+	// ```go
+	// app := appInt.(*MyApp)
+	// ```
+	Apply(app interface{}) error
 }
 
 // AsTransaction builds a Transaction from any Transactable

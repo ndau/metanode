@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	tx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
-	abci "github.com/tendermint/abci/types"
 )
 
 //go:generate msgp -tests=0
@@ -19,11 +18,11 @@ type Stringy struct {
 	S string
 }
 
-func (Stringy) IsValid(abci.Application) error {
+func (Stringy) IsValid(interface{}) error {
 	return nil
 }
 
-func (Stringy) Apply(abci.Application) error {
+func (Stringy) Apply(interface{}) error {
 	return nil
 }
 
@@ -33,11 +32,11 @@ type Inty struct {
 	I int
 }
 
-func (Inty) IsValid(abci.Application) error {
+func (Inty) IsValid(interface{}) error {
 	return fmt.Errorf("Intys are never valid")
 }
 
-func (Inty) Apply(abci.Application) error {
+func (Inty) Apply(interface{}) error {
 	return nil
 }
 
