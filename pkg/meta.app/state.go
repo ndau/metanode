@@ -18,7 +18,7 @@ type State interface {
 	// created and appropriately initialized.
 	//
 	// This is expected to be implemented on a pointer receiver. It
-	// will be called on anil pointer of the appropriate type. This
+	// will be called on a pointer of the appropriate type. This
 	// function must edit the value of the pointer appropriately to
 	// load the state.
 	Load(db datas.Database, ds datas.Dataset) (datas.Dataset, error)

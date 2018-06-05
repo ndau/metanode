@@ -25,7 +25,7 @@ The purpose of this package is to abstract that interface's implementation.
     func (m *MyApp) NewApp(...) (*MyApp, error) {
         ...
         return &MyApp{
-            meta.NewApp(spec, name, state),
+            meta.NewApp(spec, name, new(MyState)),
             ...
         }, nil
     }
