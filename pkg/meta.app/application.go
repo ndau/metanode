@@ -52,10 +52,19 @@ type App struct {
 
 	// the name of this application
 	name string
+
+	// a map of txid to example struct
+	txIDs metatx.TxIDMap
 }
 
 // NewApp prepares a new App
-func NewApp(dbSpec string, name string, state State) (*App, error) {
+//
+// - `dbSpec` is the database spec string; empty or "mem" for in-memory,
+//     the connection path (parseable by noms)
+// - `name` is the name of this app
+// - `state` is the state manager
+// - `txIDs` is the map of transaction ids to example structs
+func NewApp(dbSpec string, name string, state State, txIDs metatx.TxIDMap) (*App, error) {
 	if len(dbSpec) == 0 {
 		dbSpec = "mem"
 	}
@@ -89,6 +98,7 @@ func NewApp(dbSpec string, name string, state State) (*App, error) {
 		state:  state,
 		logger: log.NewNopLogger(),
 		name:   name,
+		txIDs:  txIDs,
 	}, nil
 }
 
@@ -171,12 +181,4 @@ func (app *App) Height() uint64 {
 	// tendermint hates this, and won't reconnect
 	// if we do so, because it counts from 0
 	return app.ds.HeadRef().Height() - 1
-}
-
-// GetTxIDs returns a map of valid transactable IDs for this app.
-//
-// This is a stub implementation; subclasses _must_ override this
-// in order for things to work properly.
-func (app *App) GetTxIDs() metatx.TxIDMap {
-	return make(metatx.TxIDMap)
 }

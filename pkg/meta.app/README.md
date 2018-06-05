@@ -18,14 +18,14 @@ The purpose of this package is to abstract that interface's implementation.
 
 - [ ] implement backing state conforming to the `State` interface.
 - [ ] implement some number of transactions conforming to the `metatx.Transactable` interface
-- [ ] override the `app.GetTxIDs` method to return an appropriate map
+- [ ] construct a `metatx.TxIDMap` enumerating all valid `Transactable`s
 - [ ] initialize your application as follows:
 
     ```go
     func (m *MyApp) NewApp(...) (*MyApp, error) {
         ...
         return &MyApp{
-            meta.NewApp(spec, name, new(MyState)),
+            meta.NewApp(spec, name, new(MyState), MyTxIDs),
             ...
         }, nil
     }

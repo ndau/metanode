@@ -11,7 +11,7 @@ import (
 )
 
 func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32, error) {
-	tx, err := metatx.TransactableFromBytes(bytes, app.GetTxIDs())
+	tx, err := metatx.TransactableFromBytes(bytes, app.txIDs)
 	rc := uint32(code.OK)
 	if err != nil {
 		app.logger.Info("encoding error",
