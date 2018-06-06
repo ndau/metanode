@@ -124,6 +124,11 @@ func (app *App) checkChild() {
 	}
 }
 
+// GetDB returns the app's db
+func (app *App) GetDB() datas.Database {
+	return app.db
+}
+
 // GetName returns the name of the app
 func (app *App) GetName() string {
 	return app.name
