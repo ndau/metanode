@@ -49,7 +49,8 @@ func (app *App) DeliverTx(bytes []byte) (response types.ResponseDeliverTx) {
 		response.Log = err.Error()
 		return
 	}
-	err = tx.Apply(app)
+	app.checkChild()
+	err = tx.Apply(app.childApp)
 	if err != nil {
 		response.Code = uint32(code.ErrorApplyingTransaction)
 		response.Log = err.Error()

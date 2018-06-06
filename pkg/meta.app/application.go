@@ -55,6 +55,10 @@ type App struct {
 
 	// a map of txid to example struct
 	txIDs metatx.TxIDMap
+
+	// the child application, which defines the transactables and state
+	// we need this to pass through into the transactables' methods.
+	childApp interface{}
 }
 
 // NewApp prepares a new App
@@ -100,6 +104,24 @@ func NewApp(dbSpec string, name string, state State, txIDs metatx.TxIDMap) (*App
 		name:   name,
 		txIDs:  txIDs,
 	}, nil
+}
+
+// SetChild specifies which child app is using this meta.App.
+//
+// It is required to be called exactly once, during program initialization.
+// It is not part of the normal constructor to ensure that it is possible
+// to call NewApp within the constructor of the child.
+func (app *App) SetChild(child interface{}) {
+	if child == nil {
+		panic("nil is invalid in SetChild")
+	}
+	app.childApp = child
+}
+
+func (app *App) checkChild() {
+	if app.childApp == nil {
+		panic("meta.App.childApp unset. Did you call myApp.App.SetChild()?")
+	}
 }
 
 // GetName returns the name of the app

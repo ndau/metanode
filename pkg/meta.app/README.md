@@ -24,9 +24,11 @@ The purpose of this package is to abstract that interface's implementation.
     ```go
     func (m *MyApp) NewApp(...) (*MyApp, error) {
         ...
-        return &MyApp{
+        myApp := MyApp{
             meta.NewApp(spec, name, new(MyState), MyTxIDs),
             ...
-        }, nil
+        }
+        myApp.App.SetChild(myApp)
+        return &MyApp, nil
     }
     ```

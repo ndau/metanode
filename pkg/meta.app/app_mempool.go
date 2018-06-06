@@ -20,7 +20,8 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 		)
 		return nil, uint32(code.EncodingError), err
 	}
-	err = tx.IsValid(app)
+	app.checkChild()
+	err = tx.IsValid(app.childApp)
 	if err != nil {
 		app.logger.Info("invalid tx", "reason", err.Error())
 		rc = uint32(code.InvalidTransaction)
