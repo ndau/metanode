@@ -139,6 +139,26 @@ func (app *App) GetState() State {
 	return app.state
 }
 
+// UpdateState updates the current application state
+//
+// Typically, it's better to implement state updates directly on the
+// state type, but it is sometimes more reasonable to want to modify
+// the state directly. This method supports that use case.
+//
+// Returning a nil state from the internal function is an error.
+// Returning an error from the internal function returns that error.
+func (app *App) UpdateState(updater func(state State) (State, error)) error {
+	state, err := updater(app.state)
+	if err != nil {
+		return err
+	}
+	if state == nil {
+		return errors.New("nil state returned from UpdateState")
+	}
+	app.state = state
+	return nil
+}
+
 // GetLogger returns the application logger
 func (app *App) GetLogger() log.Logger {
 	return app.logger
