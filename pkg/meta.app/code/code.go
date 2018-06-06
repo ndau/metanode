@@ -12,4 +12,5 @@ const (
 	InvalidTransaction
 	ErrorApplyingTransaction
 	EncodingError
+	QueryError
 )
