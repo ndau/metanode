@@ -23,12 +23,18 @@ The purpose of this package is to abstract that interface's implementation.
 
     ```go
     func (m *MyApp) NewApp(...) (*MyApp, error) {
-        ...
-        myApp := MyApp{
-            meta.NewApp(spec, name, new(MyState), MyTxIDs),
+        metaapp, err := meta.NewApp(dbSpec, name, new(MyState), TxIDs)
+        if err != nil {
+            return nil, errors.Wrap(err, "NewApp failed to create metaapp")
+        }
+
+        // init your app's fields here
+
+        app := App{
+            metaapp,
             ...
         }
-        myApp.App.SetChild(myApp)
-        return &MyApp, nil
+        app.App.SetChild(&app)
+        return &app, nil
     }
     ```
