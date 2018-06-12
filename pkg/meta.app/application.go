@@ -60,10 +60,21 @@ type App struct {
 	// we need this to pass through into the transactables' methods.
 	childApp interface{}
 
-	// how many commits to noms do we make in the course of initializing
-	// the chain? In a well-designed state, there will be one, within
-	// InitChain. However, some backing states will need more.
-	heightOffset uint64
+	// Noms and Tendermint both count tree height from 0. They must agree
+	// at all times. However, there are at least two points at which
+	// state managers will typically increment the noms height:
+	//
+	// - during state.Load (inside NewApp), to ensure the dataset has a head
+	// - during InitChain, to commit the initial validator set
+	//
+	// Neither of those occasions also includes a Tendermint height
+	// increase. We need to keep them in sync.
+	//
+	// The default behavior of Metanode is to set an offset of 1
+	// in NewApp, and increment it in InitChain. However, this
+	// method remains available for app use in case the state manager
+	// changes the height elsewhere.
+	HeightOffset uint64
 }
 
 // NewApp prepares a new App
@@ -108,7 +119,7 @@ func NewApp(dbSpec string, name string, state State, txIDs metatx.TxIDMap) (*App
 		logger:       log.NewNopLogger(),
 		name:         name,
 		txIDs:        txIDs,
-		heightOffset: 1,
+		HeightOffset: 1,
 	}, nil
 }
 
@@ -233,25 +244,7 @@ func (app *App) commit() (err error) {
 	return err
 }
 
-// SetHeightOffset sets the height offset for this app.
-//
-// Noms and Tendermint both count tree height from 0. Well-designed
-// State managers will produce a height offset of 1: they commit the
-// validator set automatically in InitChain. The default HeightOffset
-// is therefore 1.
-//
-// If the State manager commits, for example, in LoadState,
-// additional offset will be required to produce values compatible
-// with tendermint.
-//
-// This function should be called once during app initialization, with
-// a value equal to the number of times the state manager commits during
-// app initialization.
-func (app *App) SetHeightOffset(ho uint64) {
-	app.heightOffset = ho
-}
-
 // Height returns the current height of the application
 func (app *App) Height() uint64 {
-	return app.ds.HeadRef().Height() - app.heightOffset
+	return app.ds.HeadRef().Height() - app.HeightOffset
 }

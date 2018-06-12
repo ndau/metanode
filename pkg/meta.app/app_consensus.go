@@ -20,13 +20,16 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 
 	// commiting here ensures two things:
 	// 1. we actually have a head value
-	// 2. the initial validators are present from height 1 (or 0, tendermint style)
+	// 2. the initial validators are present from tendermint height 0
 	err := app.commit()
 	if err != nil {
 		logger.Error(err.Error())
 		// fail fast if we can't actually initialize the chain
 		panic(err.Error())
 	}
+	// increment the height offset here to compensate for committing
+	// the new, with-validator state
+	app.HeightOffset++
 
 	app.ValUpdates = make([]types.Validator, 0)
 	return
