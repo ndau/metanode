@@ -90,7 +90,7 @@ type App struct {
 // - `dbSpec` is the database spec string; empty or "mem" for in-memory,
 //     the connection path (parseable by noms)
 // - `name` is the name of this app
-// - `state` is the state manager
+// - `childState` is the child state manager. It must be initialized to its zero value.
 // - `txIDs` is the map of transaction ids to example structs
 func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap) (*App, error) {
 	if len(dbSpec) == 0 {
@@ -268,4 +268,9 @@ func (app *App) commit() (err error) {
 // Height returns the current height of the application
 func (app *App) Height() uint64 {
 	return app.ds.HeadRef().Height() - app.heightOffset
+}
+
+// Validators returns a list of the app's validators.
+func (app *App) Validators() ([]abci.Validator, error) {
+	return app.state.GetValidators()
 }
