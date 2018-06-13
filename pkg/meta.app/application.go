@@ -14,6 +14,7 @@ import (
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tmlibs/log"
 
+	metast "github.com/oneiro-ndev/metanode/pkg/meta.app/meta.state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
 )
 
@@ -42,7 +43,7 @@ type App struct {
 	// into the dataset is only updated on a 'Commit' transaction. This
 	// in turn means that we need to persist the state between transactions
 	// in memory, which means keeping track of this state object.
-	state State
+	state metast.Metastate
 
 	// List of pending validator updates
 	ValUpdates []abci.Validator
@@ -60,9 +61,27 @@ type App struct {
 	// we need this to pass through into the transactables' methods.
 	childApp interface{}
 
-	// how many commits to noms do we make in the course of initializing
-	// the chain? In a well-designed state, there will be one, within
-	// InitChain. However, some backing states will need more.
+	// the child state cache. this is mainly used to store the state's type
+	childState metast.State
+
+	// Noms and Tendermint both count tree height from 0. They must agree
+	// at all times. However, there are at least two points at which
+	// state managers will typically increment the noms height:
+	//
+	// - during state.Load (inside NewApp), to ensure the dataset has a head
+	// - during InitChain, to commit the initial validator set
+	//
+	// Neither of those occasions also includes a Tendermint height
+	// increase. We need to keep them in sync.
+	//
+	// The default behavior of Metanode is to set an offset of 1
+	// in NewApp, and increment it in InitChain. However, this
+	// method remains available for app use in case the state manager
+	// changes the height elsewhere.
+	//
+	// The proper value of heightOffset is always stored in the noms state,
+	// but this is a local cache for speed. This should _never_ be set
+	// directly; use setHeightOffset() instead.
 	heightOffset uint64
 }
 
@@ -73,7 +92,7 @@ type App struct {
 // - `name` is the name of this app
 // - `state` is the state manager
 // - `txIDs` is the map of transaction ids to example structs
-func NewApp(dbSpec string, name string, state State, txIDs metatx.TxIDMap) (*App, error) {
+func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap) (*App, error) {
 	if len(dbSpec) == 0 {
 		dbSpec = "mem"
 	}
@@ -96,9 +115,15 @@ func NewApp(dbSpec string, name string, state State, txIDs metatx.TxIDMap) (*App
 	// in some ways, a dataset is like a particular table in the db
 	ds := db.GetDataset(name)
 
-	ds, err = state.Load(db, ds)
+	state := metast.Metastate{}
+	ds, err = state.Load(db, ds, childState)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewApp failed to load existing state")
+	}
+
+	heightOffsetCache, err := state.GetHeightOffset()
+	if err != nil {
+		return nil, errors.Wrap(err, "NewApp failed to load current height offset")
 	}
 
 	return &App{
@@ -108,8 +133,14 @@ func NewApp(dbSpec string, name string, state State, txIDs metatx.TxIDMap) (*App
 		logger:       log.NewNopLogger(),
 		name:         name,
 		txIDs:        txIDs,
-		heightOffset: 1,
+		heightOffset: heightOffsetCache,
 	}, nil
+}
+
+// update the app's height offset
+func (app *App) setHeightOffset(ho uint64) {
+	app.state.SetHeightOffset(app.db, ho)
+	app.heightOffset = ho
 }
 
 // SetChild specifies which child app is using this meta.App.
@@ -146,27 +177,28 @@ func (app *App) GetName() string {
 }
 
 // GetState returns the current application state
-func (app *App) GetState() State {
-	return app.state
+func (app *App) GetState() (metast.State, error) {
+	err := app.state.GetChild(app.childState)
+	return app.childState, err
 }
 
-// UpdateState updates the current application state
-//
-// Typically, it's better to implement state updates directly on the
-// state type, but it is sometimes more reasonable to want to modify
-// the state directly. This method supports that use case.
+// UpdateState updates the current child application state
 //
 // Returning a nil state from the internal function is an error.
 // Returning an error from the internal function returns that error.
-func (app *App) UpdateState(updater func(state State) (State, error)) error {
-	state, err := updater(app.state)
+func (app *App) UpdateState(updater func(state metast.State) (metast.State, error)) error {
+	state, err := app.GetState()
+	if err != nil {
+		return err
+	}
+	state, err = updater(state)
 	if err != nil {
 		return err
 	}
 	if state == nil {
 		return errors.New("nil state returned from UpdateState")
 	}
-	app.state = state
+	app.state.SetChild(app.db, state)
 	return nil
 }
 
@@ -231,24 +263,6 @@ func (app *App) commit() (err error) {
 		app.ds = ds
 	}
 	return err
-}
-
-// SetHeightOffset sets the height offset for this app.
-//
-// Noms and Tendermint both count tree height from 0. Well-designed
-// State managers will produce a height offset of 1: they commit the
-// validator set automatically in InitChain. The default HeightOffset
-// is therefore 1.
-//
-// If the State manager commits, for example, in LoadState,
-// additional offset will be required to produce values compatible
-// with tendermint.
-//
-// This function should be called once during app initialization, with
-// a value equal to the number of times the state manager commits during
-// app initialization.
-func (app *App) SetHeightOffset(ho uint64) {
-	app.heightOffset = ho
 }
 
 // Height returns the current height of the application
