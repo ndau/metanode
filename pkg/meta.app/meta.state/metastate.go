@@ -6,6 +6,7 @@ package state
 
 import (
 	"github.com/attic-labs/noms/go/datas"
+	"github.com/attic-labs/noms/go/marshal"
 	nt "github.com/attic-labs/noms/go/types"
 	"github.com/pkg/errors"
 
@@ -14,28 +15,20 @@ import (
 
 // Metastate wraps the client app state and keeps track of bookkeeping data
 // such as the validator set and height offset.
-type Metastate nt.Struct
+type Metastate struct {
+	Validators   nt.Map
+	HeightOffset util.Int
+	ChildState   State
+}
 
 const metastateName = "metastate"
 
-// UpdateValidator updates the state's record of the given validator.
-//
-// When the supplied validator's power is 0, it should be removed.
-//	UpdateValidator(datas.Database, abci.Validator)
-
-func newState(db datas.Database, child State) (nt.Struct, error) {
-	childValue, err := child.MarshalNoms(db)
-	if err != nil {
-		return nt.NewStruct("", map[string]nt.Value{}), err
+func newMetaState(db datas.Database, child State) Metastate {
+	return Metastate{
+		Validators:   nt.NewMap(db),
+		HeightOffset: util.Int(1),
+		ChildState:   child,
 	}
-	return nt.NewStruct(metastateName, map[string]nt.Value{
-		// Validators is a map of public key to power
-		validatorsKey: nt.NewMap(db),
-		// heightOffset is the current offset between noms and tendermint height
-		heightOffsetKey: util.Int(1).ToBlob(db),
-		// childState is an empty child state
-		childStateKey: childValue,
-	}), nil
 }
 
 // Load the metastate from a DB and DS
@@ -46,26 +39,30 @@ func (state *Metastate) Load(db datas.Database, ds datas.Dataset, child State) (
 	}
 	head, hasHead := ds.MaybeHeadValue()
 	if !hasHead {
-		head, err = newState(db, child)
+		head, err = marshal.Marshal(db, newMetaState(db, child))
 		if err != nil {
-			return ds, errors.Wrap(err, "LoadState failed to noms-marshal child")
+			return ds, errors.Wrap(err, "Load failed to marshal metastate")
 		}
+
 		// commit the empty head so when we go to get things later, we don't
 		// panic due to an empty dataset
 		ds, err = db.CommitValue(ds, head)
 		if err != nil {
-			return ds, errors.Wrap(err, "LoadState failed to commit new head")
+			return ds, errors.Wrap(err, "Load failed to commit new head")
 		}
 	}
-	nsS, isS := head.(nt.Struct)
-	if !isS {
-		return ds, errors.New("LoadState found non-struct as ds.HeadValue")
+	err = marshal.Unmarshal(head, state)
+	if err != nil {
+		return ds, errors.Wrap(err, "Load failed to unmarshal head")
 	}
-	*state = Metastate(nsS)
 	return ds, err
 }
 
 // Commit the current state and return an updated dataset
 func (state *Metastate) Commit(db datas.Database, ds datas.Dataset) (datas.Dataset, error) {
-	return db.CommitValue(ds, nt.Struct(*state))
+	value, err := marshal.Marshal(db, state)
+	if err != nil {
+		return ds, errors.Wrap(err, "Commit failed to marshal metastate")
+	}
+	return db.CommitValue(ds, value)
 }

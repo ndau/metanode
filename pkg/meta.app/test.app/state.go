@@ -3,6 +3,7 @@ package testapp
 import (
 	"github.com/attic-labs/noms/go/marshal"
 	nt "github.com/attic-labs/noms/go/types"
+	"github.com/pkg/errors"
 
 	metast "github.com/oneiro-ndev/metanode/pkg/meta.app/meta.state"
 	util "github.com/oneiro-ndev/noms-util"
@@ -17,10 +18,24 @@ var _ metast.State = (*TestState)(nil)
 
 // MarshalNoms implements metast.State
 func (t TestState) MarshalNoms(vrw nt.ValueReadWriter) (nt.Value, error) {
-	return marshal.Marshal(vrw, t)
+	numValue, err := t.Number.MarshalNoms(vrw)
+	if err != nil {
+		return nil, err
+	}
+	return marshal.Marshal(vrw, nt.NewStruct("TestState", nt.StructData{
+		"Number": numValue,
+	}))
 }
 
 // UnmarshalNoms implements metast.State
-func (t *TestState) UnmarshalNoms(v nt.Value) error {
-	return marshal.Unmarshal(v, t)
+func (t *TestState) UnmarshalNoms(v nt.Value) (err error) {
+	strct, isStruct := v.(nt.Struct)
+	if !isStruct {
+		return errors.New("TestState.UnmarshalNoms: v is not a struct")
+	}
+	numVal, hasNumVal := strct.MaybeGet("Number")
+	if !hasNumVal {
+		return errors.New("TestState.UnmarshalNoms: Number not found")
+	}
+	return errors.Wrap(t.Number.UnmarshalNoms(numVal), "TestState.UnmarshalNoms")
 }

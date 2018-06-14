@@ -9,12 +9,12 @@ import (
 )
 
 func TestCreateTestApp(t *testing.T) {
-	_, err := NewTestApp("mem")
+	_, err := NewTestApp()
 	require.NoError(t, err)
 }
 
 func TestNegativeAddTxIsInvalid(t *testing.T) {
-	app, err := NewTestApp("mem")
+	app, err := NewTestApp()
 	require.NoError(t, err)
 
 	tx := Add{Qty: -1}
@@ -26,7 +26,7 @@ func TestNegativeAddTxIsInvalid(t *testing.T) {
 }
 
 func TestPositiveAddTxIsValid(t *testing.T) {
-	app, err := NewTestApp("mem")
+	app, err := NewTestApp()
 	require.NoError(t, err)
 
 	tx := Add{Qty: 1}
@@ -38,7 +38,7 @@ func TestPositiveAddTxIsValid(t *testing.T) {
 }
 
 func TestAddTxProperlyAffectsState(t *testing.T) {
-	app, err := NewTestApp("mem")
+	app, err := NewTestApp()
 	require.NoError(t, err)
 	app.UpdateCount(func(c *uint64) error {
 		*c = 1234

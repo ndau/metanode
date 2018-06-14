@@ -121,11 +121,6 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 		return nil, errors.Wrap(err, "NewApp failed to load existing state")
 	}
 
-	heightOffsetCache, err := state.GetHeightOffset()
-	if err != nil {
-		return nil, errors.Wrap(err, "NewApp failed to load current height offset")
-	}
-
 	return &App{
 		db:           db,
 		ds:           ds,
@@ -133,7 +128,7 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 		logger:       log.NewNopLogger(),
 		name:         name,
 		txIDs:        txIDs,
-		heightOffset: heightOffsetCache,
+		heightOffset: state.GetHeightOffset(),
 	}, nil
 }
 
@@ -177,9 +172,8 @@ func (app *App) GetName() string {
 }
 
 // GetState returns the current application state
-func (app *App) GetState() (metast.State, error) {
-	err := app.state.GetChild(app.childState)
-	return app.childState, err
+func (app *App) GetState() metast.State {
+	return app.state.ChildState
 }
 
 // UpdateState updates the current child application state
@@ -187,18 +181,14 @@ func (app *App) GetState() (metast.State, error) {
 // Returning a nil state from the internal function is an error.
 // Returning an error from the internal function returns that error.
 func (app *App) UpdateState(updater func(state metast.State) (metast.State, error)) error {
-	state, err := app.GetState()
-	if err != nil {
-		return err
-	}
-	state, err = updater(state)
+	state, err := updater(app.GetState())
 	if err != nil {
 		return err
 	}
 	if state == nil {
 		return errors.New("nil state returned from UpdateState")
 	}
-	app.state.SetChild(app.db, state)
+	app.state.ChildState = state
 	return nil
 }
 
