@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/attic-labs/noms/go/marshal"
+	nt "github.com/attic-labs/noms/go/types"
 )
 
 // State is a generic application state, backed by noms.
@@ -13,4 +14,10 @@ import (
 type State interface {
 	marshal.Marshaler
 	marshal.Unmarshaler
+
+	// Init initializes the state.
+	//
+	// It is expected to be implemented on a pointer receiver, and
+	// initialize maps etc as required.
+	Init(vrw nt.ValueReadWriter)
 }

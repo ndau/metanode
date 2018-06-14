@@ -39,3 +39,6 @@ func (t *TestState) UnmarshalNoms(v nt.Value) (err error) {
 	}
 	return errors.Wrap(t.Number.UnmarshalNoms(numVal), "TestState.UnmarshalNoms")
 }
+
+// Init satisfies metast.State
+func (*TestState) Init(vrw nt.ValueReadWriter) {}

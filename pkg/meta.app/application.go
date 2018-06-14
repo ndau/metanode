@@ -112,6 +112,9 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 		return nil, errors.Wrap(d.Unwrap(err), fmt.Sprintf("NewApp failed to connect to noms db, is noms running at: %s?", dbSpec))
 	}
 
+	// initialize the child state
+	childState.Init(db)
+
 	// in some ways, a dataset is like a particular table in the db
 	ds := db.GetDataset(name)
 
