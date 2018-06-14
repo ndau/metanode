@@ -30,7 +30,7 @@ func (a Add) IsValid(interface{}) error {
 
 // Apply implements Transactable
 func (a Add) Apply(appI interface{}) error {
-	app := appI.(TestApp)
+	app := appI.(*TestApp)
 	return app.UpdateCount(func(c *uint64) error {
 		*c += uint64(a.Qty)
 		return nil

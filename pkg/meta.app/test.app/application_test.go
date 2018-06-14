@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta.app/code"
+	metatx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
+
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/abci/types"
 )
@@ -17,20 +19,20 @@ func TestNegativeAddTxIsInvalid(t *testing.T) {
 	app, err := NewTestApp()
 	require.NoError(t, err)
 
-	tx := Add{Qty: -1}
-	txBytes, err := tx.MarshalMsg(nil)
+	tx := &Add{Qty: -1}
+	txBytes, err := metatx.TransactableToBytes(tx, TxIDs)
 	require.NoError(t, err)
 
 	resp := app.CheckTx(txBytes)
-	require.NotEqual(t, code.OK, code.ReturnCode(resp.Code))
+	require.Equal(t, code.InvalidTransaction, code.ReturnCode(resp.Code))
 }
 
 func TestPositiveAddTxIsValid(t *testing.T) {
 	app, err := NewTestApp()
 	require.NoError(t, err)
 
-	tx := Add{Qty: 1}
-	txBytes, err := tx.MarshalMsg(nil)
+	tx := &Add{Qty: 1}
+	txBytes, err := metatx.TransactableToBytes(tx, TxIDs)
 	require.NoError(t, err)
 
 	resp := app.CheckTx(txBytes)
@@ -45,8 +47,8 @@ func TestAddTxProperlyAffectsState(t *testing.T) {
 		return nil
 	})
 
-	tx := Add{Qty: 5}
-	txBytes, err := tx.MarshalMsg(nil)
+	tx := &Add{Qty: 5}
+	txBytes, err := metatx.TransactableToBytes(tx, TxIDs)
 	require.NoError(t, err)
 
 	app.BeginBlock(abci.RequestBeginBlock{})
@@ -55,5 +57,5 @@ func TestAddTxProperlyAffectsState(t *testing.T) {
 	app.Commit()
 
 	require.Equal(t, code.OK, code.ReturnCode(resp.Code))
-	require.Equal(t, 1239, app.GetCount())
+	require.Equal(t, uint64(1239), app.GetCount())
 }
