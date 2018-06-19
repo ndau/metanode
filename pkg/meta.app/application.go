@@ -11,8 +11,8 @@ import (
 	"github.com/attic-labs/noms/go/datas"
 	"github.com/attic-labs/noms/go/spec"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/abci/types"
-	"github.com/tendermint/tmlibs/log"
 
 	metast "github.com/oneiro-ndev/metanode/pkg/meta.app/meta.state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
@@ -49,7 +49,7 @@ type App struct {
 	ValUpdates []abci.Validator
 
 	// This logger captures various ABCI events
-	logger log.Logger
+	logger *log.Logger
 
 	// the name of this application
 	name string
@@ -128,7 +128,7 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 		db:           db,
 		ds:           ds,
 		state:        state,
-		logger:       log.NewNopLogger(),
+		logger:       log.New(),
 		name:         name,
 		txIDs:        txIDs,
 		heightOffset: state.GetHeightOffset(),
@@ -196,12 +196,12 @@ func (app *App) UpdateState(updater func(state metast.State) (metast.State, erro
 }
 
 // GetLogger returns the application logger
-func (app *App) GetLogger() log.Logger {
+func (app *App) GetLogger() *log.Logger {
 	return app.logger
 }
 
 // SetLogger sets the logger to be used by this app
-func (app *App) SetLogger(logger log.Logger) {
+func (app *App) SetLogger(logger *log.Logger) {
 	app.logger = logger
 }
 
@@ -217,10 +217,10 @@ func (app *App) LogState() {
 // logRequest emits a log message on request receipt
 //
 // It also returns a decorated logger for request-internal logging.
-func (app *App) logRequestOptHt(method string, showHeight bool) log.Logger {
-	decoratedLogger := app.logger.With(
-		"method", method,
-	)
+func (app *App) logRequestOptHt(method string, showHeight bool) log.FieldLogger {
+	decoratedLogger := app.logger.WithFields(log.Fields{
+		"method": method,
+	})
 	if showHeight {
 		decoratedLogger.Info(
 			"received request",
@@ -232,11 +232,11 @@ func (app *App) logRequestOptHt(method string, showHeight bool) log.Logger {
 	return decoratedLogger
 }
 
-func (app *App) logRequest(m string) log.Logger {
+func (app *App) logRequest(m string) log.FieldLogger {
 	return app.logRequestOptHt(m, true)
 }
 
-func (app *App) logRequestBare(m string) log.Logger {
+func (app *App) logRequestBare(m string) log.FieldLogger {
 	return app.logRequestOptHt(m, false)
 }
 
