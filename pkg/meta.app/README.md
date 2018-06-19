@@ -22,7 +22,7 @@ The purpose of this package is to abstract that interface's implementation.
 - [ ] initialize your application as follows:
 
     ```go
-    func (m *MyApp) NewApp(...) (*MyApp, error) {
+    func NewApp(...) (*MyApp, error) {
         metaapp, err := meta.NewApp(dbSpec, name, new(MyState), TxIDs)
         if err != nil {
             return nil, errors.Wrap(err, "NewApp failed to create metaapp")
