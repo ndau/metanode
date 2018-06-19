@@ -49,7 +49,7 @@ type App struct {
 	ValUpdates []abci.Validator
 
 	// This logger captures various ABCI events
-	logger *log.Logger
+	logger log.FieldLogger
 
 	// the name of this application
 	name string
@@ -196,12 +196,12 @@ func (app *App) UpdateState(updater func(state metast.State) (metast.State, erro
 }
 
 // GetLogger returns the application logger
-func (app *App) GetLogger() *log.Logger {
+func (app *App) GetLogger() log.FieldLogger {
 	return app.logger
 }
 
 // SetLogger sets the logger to be used by this app
-func (app *App) SetLogger(logger *log.Logger) {
+func (app *App) SetLogger(logger log.FieldLogger) {
 	app.logger = logger
 }
 
