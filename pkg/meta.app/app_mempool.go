@@ -7,6 +7,7 @@ import (
 
 	"github.com/oneiro-ndev/metanode/pkg/meta.app/code"
 	"github.com/oneiro-ndev/metanode/pkg/meta.transaction"
+	log "github.com/sirupsen/logrus"
 	"github.com/tendermint/abci/types"
 )
 
@@ -14,16 +15,16 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 	tx, err := metatx.TransactableFromBytes(bytes, app.txIDs)
 	rc := uint32(code.OK)
 	if err != nil {
-		app.logger.Info("encoding error",
-			"reason", err.Error(),
-			"tx", fmt.Sprintf("%x", bytes),
-		)
+		app.logger.WithFields(log.Fields{
+			"reason": err.Error(),
+			"tx":     fmt.Sprintf("%x", bytes),
+		}).Info("Encoding error")
 		return nil, uint32(code.EncodingError), err
 	}
 	app.checkChild()
 	err = tx.IsValid(app.childApp)
 	if err != nil {
-		app.logger.Info("invalid tx", "reason", err.Error())
+		app.logger.WithField("reason", err.Error()).Info("invalid tx")
 		rc = uint32(code.InvalidTransaction)
 		return nil, rc, err
 	}
@@ -32,7 +33,7 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 
 // CheckTx validates a Transaction
 func (app *App) CheckTx(bytes []byte) (response types.ResponseCheckTx) {
-	app.logger.Info("Received request", "type", "CheckTx")
+	app.logger.WithField("type", "CheckTx").Info("Received Request")
 	_, rc, err := app.validateTransactable(bytes)
 	response.Code = rc
 	if err != nil {

@@ -7,11 +7,15 @@ import (
 
 // UpdateValidator updates the app's internal state with the given validator
 func (app *App) UpdateValidator(v types.Validator) {
-	logger := app.logger.WithFields(log.Fields{"method": "updateValidator"})
-	logger.Info("entered method", "Power", v.GetPower(), "PubKey", v.GetPubKey())
+	logger := app.logger.WithFields(log.Fields{
+		"method": "updateValidator",
+		"power":  v.GetPower(),
+		"PubKey": v.GetPubKey(),
+	})
+	logger.Info("entered method")
 	app.state.UpdateValidator(app.db, v)
 
 	// we only update the changes array after updating the tree
 	app.ValUpdates = append(app.ValUpdates, v)
-	logger.Info("exiting OK", "app.ValUpdates", app.ValUpdates)
+	logger.WithField("app.ValUpdates", app.ValUpdates).Info("exiting ok")
 }

@@ -207,28 +207,22 @@ func (app *App) SetLogger(logger log.FieldLogger) {
 
 // LogState emits a log message detailing the current app state
 func (app *App) LogState() {
-	app.logger.Info(
-		"LogState",
-		"height", app.Height(),
-		"hash", app.HashStr(),
-	)
+	app.logger.WithFields(log.Fields{
+		"height": app.Height(),
+		"hash":   app.HashStr(),
+	}).Info("LogState")
 }
 
 // logRequest emits a log message on request receipt
 //
 // It also returns a decorated logger for request-internal logging.
 func (app *App) logRequestOptHt(method string, showHeight bool) log.FieldLogger {
-	decoratedLogger := app.logger.WithFields(log.Fields{
-		"method": method,
-	})
+	decoratedLogger := app.logger.WithField("method", method)
 	if showHeight {
-		decoratedLogger.Info(
-			"received request",
-			"height", app.Height(),
-		)
-	} else {
-		decoratedLogger.Info("received request")
+		decoratedLogger = decoratedLogger.WithField("height", app.Height())
 	}
+	decoratedLogger.Info("received request")
+
 	return decoratedLogger
 }
 

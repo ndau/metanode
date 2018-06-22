@@ -4,6 +4,7 @@ package app
 
 import (
 	"github.com/oneiro-ndev/metanode/pkg/meta.app/code"
+	log "github.com/sirupsen/logrus"
 	"github.com/tendermint/abci/types"
 )
 
@@ -19,7 +20,10 @@ func (app *App) Info(req types.RequestInfo) (resInfo types.ResponseInfo) {
 // SetOption sets application options, but is entirely undocumented
 func (app *App) SetOption(request types.RequestSetOption) (response types.ResponseSetOption) {
 	logger := app.logRequest("SetOption")
-	logger.Info("params", "key", request.GetKey(), "value", request.GetValue())
+	logger.WithFields(log.Fields{
+		"key":   request.GetKey(),
+		"value": request.GetValue(),
+	}).Info("params")
 	return
 }
 
@@ -37,7 +41,7 @@ func RegisterQueryHandler(endpoint string, handler func(app interface{}, request
 // QueryError is a helper to generate a useful response if an error is not nil
 func (app *App) QueryError(err error, response *types.ResponseQuery, msg string) {
 	if err != nil {
-		app.GetLogger().Error(msg, "error", err.Error())
+		app.GetLogger().WithField("error", err.Error()).Error(msg)
 
 		if len(msg) > 0 {
 			msg = msg + ": "
