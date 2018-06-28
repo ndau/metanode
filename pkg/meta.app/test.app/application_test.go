@@ -20,7 +20,7 @@ func TestNegativeAddTxIsInvalid(t *testing.T) {
 	require.NoError(t, err)
 
 	tx := &Add{Qty: -1}
-	txBytes, err := metatx.TransactableToBytes(tx, TxIDs)
+	txBytes, err := metatx.Marshal(tx, TxIDs)
 	require.NoError(t, err)
 
 	resp := app.CheckTx(txBytes)
@@ -32,7 +32,7 @@ func TestPositiveAddTxIsValid(t *testing.T) {
 	require.NoError(t, err)
 
 	tx := &Add{Qty: 1}
-	txBytes, err := metatx.TransactableToBytes(tx, TxIDs)
+	txBytes, err := metatx.Marshal(tx, TxIDs)
 	require.NoError(t, err)
 
 	resp := app.CheckTx(txBytes)
@@ -48,7 +48,7 @@ func TestAddTxProperlyAffectsState(t *testing.T) {
 	})
 
 	tx := &Add{Qty: 5}
-	txBytes, err := metatx.TransactableToBytes(tx, TxIDs)
+	txBytes, err := metatx.Marshal(tx, TxIDs)
 	require.NoError(t, err)
 
 	app.BeginBlock(abci.RequestBeginBlock{})

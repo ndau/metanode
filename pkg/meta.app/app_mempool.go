@@ -12,7 +12,7 @@ import (
 )
 
 func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32, error) {
-	tx, err := metatx.TransactableFromBytes(bytes, app.txIDs)
+	tx, err := metatx.Unmarshal(bytes, app.txIDs)
 	rc := uint32(code.OK)
 	if err != nil {
 		app.logger.WithFields(log.Fields{
@@ -22,7 +22,7 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 		return nil, uint32(code.EncodingError), err
 	}
 	app.checkChild()
-	err = tx.IsValid(app.childApp)
+	err = tx.Validate(app.childApp)
 	if err != nil {
 		app.logger.WithField("reason", err.Error()).Info("invalid tx")
 		rc = uint32(code.InvalidTransaction)

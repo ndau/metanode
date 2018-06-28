@@ -20,8 +20,8 @@ type Add struct {
 
 var _ metatx.Transactable = (*Add)(nil)
 
-// IsValid implements Transactable
-func (a Add) IsValid(interface{}) error {
+// Validate implements Transactable
+func (a Add) Validate(interface{}) error {
 	if a.Qty < 0 {
 		return fmt.Errorf("Adding negatives is silly")
 	}
