@@ -18,7 +18,7 @@ type Stringy struct {
 	S string
 }
 
-func (Stringy) IsValid(interface{}) error {
+func (Stringy) Validate(interface{}) error {
 	return nil
 }
 
@@ -32,7 +32,7 @@ type Inty struct {
 	I int
 }
 
-func (Inty) IsValid(interface{}) error {
+func (Inty) Validate(interface{}) error {
 	return fmt.Errorf("Intys are never valid")
 }
 

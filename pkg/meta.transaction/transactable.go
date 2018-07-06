@@ -31,7 +31,7 @@ type Transactable interface {
 	msgp.Marshaler
 	msgp.Unmarshaler
 
-	// IsValid returns nil if the Transactable is valid, or an error otherwise.
+	// Validate returns nil if the Transactable is valid, or an error otherwise.
 	//
 	// `app` will always be an instance of your app; it is expected that the
 	// first line of most implementations will be
@@ -39,7 +39,7 @@ type Transactable interface {
 	// ```go
 	// app := appInt.(*MyApp)
 	// ````
-	IsValid(app interface{}) error
+	Validate(app interface{}) error
 	// Apply applies this transaction to the supplied application, updating its
 	// internal state as required.
 	//
@@ -106,8 +106,8 @@ func (tx *Transaction) AsTransactable(idMap TxIDMap) (Transactable, error) {
 	return newTxab, err
 }
 
-// TransactableFromBytes constructs a Transactable from a serialized Transaction
-func TransactableFromBytes(bytes []byte, idMap TxIDMap) (Transactable, error) {
+// Unmarshal constructs a Transactable from a serialized Transaction
+func Unmarshal(bytes []byte, idMap TxIDMap) (Transactable, error) {
 	txn := Transaction{}
 	leftovers, err := txn.UnmarshalMsg(bytes)
 	if err != nil {
@@ -119,8 +119,8 @@ func TransactableFromBytes(bytes []byte, idMap TxIDMap) (Transactable, error) {
 	return txn.AsTransactable(idMap)
 }
 
-// TransactableToBytes serializes a Transactable into a byte slice
-func TransactableToBytes(txab Transactable, idMap TxIDMap) ([]byte, error) {
+// Marshal serializes a Transactable into a byte slice
+func Marshal(txab Transactable, idMap TxIDMap) ([]byte, error) {
 	tx, err := AsTransaction(txab, idMap)
 	if err != nil {
 		return nil, err
