@@ -195,6 +195,20 @@ func (app *App) UpdateState(updater func(state metast.State) (metast.State, erro
 	return nil
 }
 
+// UpdateStateImmediately is like UpdateState, but commits immediately.
+//
+// It also increments the height offset.
+//
+// This is useful for inserting mock data etc.
+func (app *App) UpdateStateImmediately(updater func(state metast.State) (metast.State, error)) error {
+	err := app.UpdateState(updater)
+	if err != nil {
+		return err
+	}
+	app.setHeightOffset(app.heightOffset + 1)
+	return app.commit()
+}
+
 // GetLogger returns the application logger
 func (app *App) GetLogger() log.FieldLogger {
 	return app.logger
