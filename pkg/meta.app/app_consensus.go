@@ -4,7 +4,7 @@ package app
 
 import (
 	"github.com/oneiro-ndev/metanode/pkg/meta.app/code"
-	"github.com/tendermint/abci/types"
+	"github.com/tendermint/tendermint/abci/types"
 )
 
 // InitChain performs necessary chain initialization.

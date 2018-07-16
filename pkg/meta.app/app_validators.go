@@ -2,7 +2,7 @@ package app
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/tendermint/abci/types"
+	"github.com/tendermint/tendermint/abci/types"
 )
 
 // UpdateValidator updates the app's internal state with the given validator

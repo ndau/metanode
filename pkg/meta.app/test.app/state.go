@@ -3,10 +3,9 @@ package testapp
 import (
 	"github.com/attic-labs/noms/go/marshal"
 	nt "github.com/attic-labs/noms/go/types"
-	"github.com/pkg/errors"
-
 	metast "github.com/oneiro-ndev/metanode/pkg/meta.app/meta.state"
 	util "github.com/oneiro-ndev/noms-util"
+	"github.com/pkg/errors"
 )
 
 // TestState is a super simple test state

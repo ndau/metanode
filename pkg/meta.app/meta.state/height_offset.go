@@ -2,7 +2,6 @@ package state
 
 import (
 	"github.com/attic-labs/noms/go/datas"
-
 	util "github.com/oneiro-ndev/noms-util"
 )
 

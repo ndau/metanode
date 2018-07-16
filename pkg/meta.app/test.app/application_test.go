@@ -5,9 +5,8 @@ import (
 
 	"github.com/oneiro-ndev/metanode/pkg/meta.app/code"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
-
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func TestCreateTestApp(t *testing.T) {

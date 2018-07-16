@@ -1,6 +1,6 @@
 // This file contains the basic definition for an ABCI Application.
 //
-// Interface: https://godoc.org/github.com/tendermint/abci/types#Application
+// Interface: https://godoc.org/github.com/tendermint/tendermint/abci/types#Application
 
 package app
 
@@ -10,12 +10,11 @@ import (
 	"github.com/attic-labs/noms/go/d"
 	"github.com/attic-labs/noms/go/datas"
 	"github.com/attic-labs/noms/go/spec"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	abci "github.com/tendermint/abci/types"
-
 	metast "github.com/oneiro-ndev/metanode/pkg/meta.app/meta.state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // App is an ABCI application which implements an Oneiro chain
