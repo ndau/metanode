@@ -8,9 +8,8 @@ import (
 	"github.com/attic-labs/noms/go/datas"
 	"github.com/attic-labs/noms/go/marshal"
 	nt "github.com/attic-labs/noms/go/types"
-	"github.com/pkg/errors"
-
 	util "github.com/oneiro-ndev/noms-util"
+	"github.com/pkg/errors"
 )
 
 // Metastate wraps the client app state and keeps track of bookkeeping data
