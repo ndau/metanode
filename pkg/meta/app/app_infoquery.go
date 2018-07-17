@@ -3,7 +3,7 @@
 package app
 
 import (
-	"github.com/oneiro-ndev/metanode/pkg/meta.app/code"
+	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	log "github.com/sirupsen/logrus"
 	"github.com/tendermint/tendermint/abci/types"
 )

@@ -1,8 +1,8 @@
 package testapp
 
 import (
-	meta "github.com/oneiro-ndev/metanode/pkg/meta.app"
-	metast "github.com/oneiro-ndev/metanode/pkg/meta.app/meta.state"
+	meta "github.com/oneiro-ndev/metanode/pkg/meta/app"
+	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	util "github.com/oneiro-ndev/noms-util"
 	"github.com/pkg/errors"
 )

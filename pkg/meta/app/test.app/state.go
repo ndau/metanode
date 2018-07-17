@@ -3,7 +3,7 @@ package testapp
 import (
 	"github.com/attic-labs/noms/go/marshal"
 	nt "github.com/attic-labs/noms/go/types"
-	metast "github.com/oneiro-ndev/metanode/pkg/meta.app/meta.state"
+	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	util "github.com/oneiro-ndev/noms-util"
 	"github.com/pkg/errors"
 )
