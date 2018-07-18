@@ -1,10 +1,13 @@
 package testapp
 
 import (
+	"io/ioutil"
+
 	meta "github.com/oneiro-ndev/metanode/pkg/meta/app"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	util "github.com/oneiro-ndev/noms-util"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // TestApp is an application built solely for testing the metanode stuff
@@ -20,6 +23,9 @@ func NewTestApp() (*TestApp, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "NewApp failed to create metaapp")
 	}
+	logger := log.StandardLogger()
+	logger.Out = ioutil.Discard
+	metaapp.SetLogger(logger)
 
 	app := TestApp{
 		metaapp,
