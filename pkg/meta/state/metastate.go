@@ -15,18 +15,18 @@ import (
 // Metastate wraps the client app state and keeps track of bookkeeping data
 // such as the validator set and height offset.
 type Metastate struct {
-	Validators   nt.Map
-	HeightOffset util.Int
-	ChildState   State
+	Validators nt.Map
+	Height     util.Int
+	ChildState State
 }
 
 const metastateName = "metastate"
 
 func newMetaState(db datas.Database, child State) Metastate {
 	return Metastate{
-		Validators:   nt.NewMap(db),
-		HeightOffset: util.Int(1),
-		ChildState:   child,
+		Validators: nt.NewMap(db),
+		Height:     util.Int(0),
+		ChildState: child,
 	}
 }
 
@@ -67,11 +67,11 @@ func (state *Metastate) Load(db datas.Database, ds datas.Dataset, child State) (
 		return ds, errors.New("Load failed: noms Validators are not a Map")
 	}
 	state.Validators = valMap
-	heightOffset, hasHeightOffset := nStruct.MaybeGet("heightOffset")
+	heightOffset, hasHeightOffset := nStruct.MaybeGet("height")
 	if !hasHeightOffset {
-		return ds, errors.New("Load failed: noms Struct has no HeightOffset")
+		return ds, errors.New("Load failed: noms Struct has no Height")
 	}
-	err = state.HeightOffset.UnmarshalNoms(heightOffset)
+	err = state.Height.UnmarshalNoms(heightOffset)
 	if err != nil {
 		return ds, errors.Wrap(err, "Load failed")
 	}
@@ -92,7 +92,7 @@ func (state *Metastate) Load(db datas.Database, ds datas.Dataset, child State) (
 func (state *Metastate) Commit(db datas.Database, ds datas.Dataset) (datas.Dataset, error) {
 	// marshal.Marshal doesn't work here because we're writing an interface type
 	// nothing to it but to do it: let's hand-roll this implementation
-	hoValue, err := state.HeightOffset.MarshalNoms(db)
+	hoValue, err := state.Height.MarshalNoms(db)
 	if err != nil {
 		return ds, errors.Wrap(err, "Commit failed to marshal HeightOffset")
 	}
