@@ -5,8 +5,8 @@ package app
 import (
 	"fmt"
 
-	"github.com/oneiro-ndev/metanode/pkg/meta.app/code"
-	"github.com/oneiro-ndev/metanode/pkg/meta.transaction"
+	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
+	"github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	log "github.com/sirupsen/logrus"
 	"github.com/tendermint/tendermint/abci/types"
 )

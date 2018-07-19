@@ -3,7 +3,7 @@ package testapp
 import (
 	"fmt"
 
-	metatx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
+	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 )
 
 //go:generate msgp -tests=0

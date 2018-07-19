@@ -3,7 +3,7 @@ package tests
 import (
 	"fmt"
 
-	tx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
+	tx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 )
 
 //go:generate msgp -tests=0

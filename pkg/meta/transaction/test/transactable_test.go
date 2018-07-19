@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	tx "github.com/oneiro-ndev/metanode/pkg/meta.transaction"
+	tx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	"github.com/stretchr/testify/require"
 )
 
