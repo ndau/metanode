@@ -1,0 +1,86 @@
+package testapp
+
+import (
+	"math/rand"
+	"testing"
+
+	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
+	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+)
+
+func issueBlock(t *testing.T, app *TestApp, height uint64, txs ...metatx.Transactable) {
+	app.BeginBlock(abci.RequestBeginBlock{Header: abci.Header{
+		Height: int64(height),
+	}})
+	for _, tx := range txs {
+		bytes, err := metatx.Marshal(tx, TxIDs)
+		require.NoError(t, err)
+		resp := app.DeliverTx(bytes)
+		t.Log(resp.Log)
+		require.Equal(t, code.OK, code.ReturnCode(resp.Code))
+	}
+	app.EndBlock(abci.RequestEndBlock{})
+	app.Commit()
+}
+
+// Creating noms blocks only when there are transactions is all well
+// and good, but we need to ensure that the app height is always what
+// tendermint expects.
+func TestAppHeightFollowsTendermint(t *testing.T) {
+	app, err := NewTestApp()
+	require.NoError(t, err)
+
+	require.Equal(t, uint64(0), app.Height())
+	app.InitChain(abci.RequestInitChain{})
+	require.Equal(t, uint64(0), app.Height())
+
+	apphash := app.Hash()
+
+	for i := uint64(1); i < 5; i++ {
+		issueBlock(t, app, i)
+		require.Equal(t, i, app.Height())
+	}
+
+	// despite having just sent some blocks, the app hash must not have
+	// changed, as there have been no transactions
+	require.Equal(t, apphash, app.Hash())
+}
+
+// let's test that the height and app hash remain consistent across a few
+// iterations of the above
+func TestAppHeightAndHashUpdatePerTM(t *testing.T) {
+	app, err := NewTestApp()
+	require.NoError(t, err)
+
+	require.Equal(t, uint64(0), app.Height())
+	app.InitChain(abci.RequestInitChain{})
+	require.Equal(t, uint64(0), app.Height())
+
+	tmBlock := uint64(0)
+	outerLimit := int(rand.Int31n(10))
+	for outer := 0; outer <= outerLimit; outer++ {
+		apphash := app.Hash()
+
+		innerLimit := int(rand.Int31n(10))
+		for inner := 1; inner <= innerLimit; inner++ {
+			issueBlock(t, app, tmBlock)
+			require.Equal(t, tmBlock, app.Height())
+			tmBlock++
+		}
+
+		// despite having just sent some blocks, the app hash must not have
+		// changed, as there have been no transactions
+		require.Equal(t, apphash, app.Hash())
+
+		// now issue a non-empty block
+		issueBlock(t, app, tmBlock, &Add{1})
+		require.Equal(t, tmBlock, app.Height())
+		tmBlock++
+
+		// issuing a transaction must have updated the actual state and
+		// created a new app hash
+		require.NotEqual(t, apphash, app.Hash())
+	}
+}
