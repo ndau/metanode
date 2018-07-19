@@ -66,10 +66,11 @@ func SetupHoneycomb(logger *logrus.Logger) *logrus.Logger {
 		key := os.Getenv("HONEYCOMB_KEY")
 		dataset := os.Getenv("HONEYCOMB_DATASET")
 		honeycombLoggingHook, err := newHoneycombHook(key, dataset)
-		if err == nil {
+		if err != nil {
+			logger.Warn("Honeycomb failed to initialize properly - did you set HONEYCOMB_KEY and HONEYCOMB_DATASET?")
+		} else {
 			logger.Hooks.Add(honeycombLoggingHook)
 			logger.Out = ioutil.Discard
-			logger.Warn("Honeycomb failed to initialize properly - did you set HONEYCOMB_KEY and HONEYCOMB_DATASET?")
 		}
 	})
 
