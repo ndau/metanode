@@ -51,10 +51,10 @@ func newHoneycombHook(writeKey string, datasetName string) (logrus.Hook, error) 
 	if err != nil {
 		return nil, err
 	}
-	_, err = libhoney.VerifyWriteKey(cfg)
-	if err != nil {
-		return nil, err
-	}
+	// _, err = libhoney.VerifyWriteKey(cfg)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	return &honeycombHook{}, nil
 }
 
