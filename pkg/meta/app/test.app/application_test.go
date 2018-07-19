@@ -58,36 +58,3 @@ func TestAddTxProperlyAffectsState(t *testing.T) {
 	require.Equal(t, code.OK, code.ReturnCode(resp.Code))
 	require.Equal(t, uint64(1239), app.GetCount())
 }
-
-func issueBlock(t *testing.T, app *TestApp, height uint64, txs ...metatx.Transactable) {
-	app.BeginBlock(abci.RequestBeginBlock{Header: abci.Header{
-		Height: int64(height),
-	}})
-	for _, tx := range txs {
-		bytes, err := metatx.Marshal(tx, TxIDs)
-		require.NoError(t, err)
-		resp := app.DeliverTx(bytes)
-		t.Log(resp.Log)
-		require.Equal(t, code.OK, code.ReturnCode(resp.Code))
-	}
-	app.EndBlock(abci.RequestEndBlock{})
-	app.Commit()
-}
-
-// Creating noms blocks only when there are transactions is all well
-// and good, but we need to ensure that the app height is always what
-// tendermint expects.
-func TestAppHeightStaysCurrent(t *testing.T) {
-	app, err := NewTestApp()
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(0), app.Height())
-	app.InitChain(abci.RequestInitChain{})
-	require.Equal(t, uint64(0), app.Height())
-
-	for i := uint64(1); i < 5; i++ {
-		issueBlock(t, app, i)
-		require.Equal(t, i, app.Height())
-	}
-
-}
