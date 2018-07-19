@@ -216,14 +216,20 @@ func (app *App) GetLogger() log.FieldLogger {
 	return app.logger
 }
 
-// SetLogger sets the logger to be used by this app
+// SetLogger sets the logger to be used by this app.
+// It has the side effect of setting up Honeycomb if it's possible to do so.
 func (app *App) SetLogger(logger log.FieldLogger) {
-	l, ok := logger.(*log.Logger)
-	if !ok {
-		logger.Warn("Logger was not *logrus.Logger, so can't set up Honeycomb.")
+	switch l := logger.(type) {
+	case *log.Logger:
+		app.logger = SetupHoneycomb(l)
+		app.logger = l
+	case *log.Entry:
+		l.Logger = SetupHoneycomb(l.Logger)
+		app.logger = l
+	default:
+		logger.Warnf("Logger was %T, so can't set up Honeycomb.", logger)
 		app.logger = logger
 	}
-	app.logger = SetupHoneycomb(l)
 }
 
 // LogState emits a log message detailing the current app state
