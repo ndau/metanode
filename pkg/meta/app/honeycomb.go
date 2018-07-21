@@ -104,8 +104,14 @@ func (h *honeycombWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	evt := libhoney.NewBuilder().NewEvent()
-	evt.Add(v)
-	evt.Send()
+	err = evt.Add(v)
+	if err != nil {
+		return 0, err
+	}
+	err = evt.Send()
+	if err != nil {
+		return 0, err
+	}
 
 	return len(b), nil
 }
