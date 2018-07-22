@@ -12,6 +12,7 @@ import (
 	"github.com/attic-labs/noms/go/spec"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	"github.com/oneiro-ndev/o11y/pkg/honeycomb"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -221,10 +222,10 @@ func (app *App) GetLogger() log.FieldLogger {
 func (app *App) SetLogger(logger log.FieldLogger) {
 	switch l := logger.(type) {
 	case *log.Logger:
-		app.logger = SetupHoneycomb(l)
+		app.logger = honeycomb.Setup(l)
 		app.logger = l
 	case *log.Entry:
-		l.Logger = SetupHoneycomb(l.Logger)
+		l.Logger = honeycomb.Setup(l.Logger)
 		app.logger = l
 	default:
 		logger.Warnf("Logger was %T, so can't set up Honeycomb.", logger)
