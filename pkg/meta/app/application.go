@@ -124,7 +124,7 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 		return nil, errors.Wrap(err, "NewApp failed to load existing state")
 	}
 
-	logger := log.New()
+	logger := honeycomb.Setup(log.New())
 	logger.Formatter = new(log.JSONFormatter)
 
 	return &App{
@@ -245,7 +245,7 @@ func (app *App) LogState() {
 //
 // It also returns a decorated logger for request-internal logging.
 func (app *App) logRequestOptHt(method string, showHeight bool) log.FieldLogger {
-	decoratedLogger := app.logger.WithField("method", method)
+	decoratedLogger := app.GetLogger().WithField("method", method)
 	if showHeight {
 		decoratedLogger = decoratedLogger.WithField("height", app.Height())
 	}
