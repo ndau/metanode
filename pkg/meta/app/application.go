@@ -253,6 +253,7 @@ func (app *App) logRequestOptHt(method string, showHeight bool) log.FieldLogger 
 	decoratedLogger := app.GetLogger().WithField("method", method)
 	if showHeight {
 		decoratedLogger = decoratedLogger.WithField("height", app.Height())
+		decoratedLogger = decoratedLogger.WithField("hash", app.HashStr())
 	}
 	decoratedLogger.Info("received request")
 
