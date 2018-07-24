@@ -12,6 +12,7 @@ import (
 	"github.com/attic-labs/noms/go/spec"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	"github.com/oneiro-ndev/o11y/pkg/honeycomb"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -26,7 +27,7 @@ type App struct {
 	// store the database, get a cursor, and use the db's stateful
 	// nature to keep track of what table we're modifying.
 	//
-	// Instead, noms breaks things down a bit differentely:
+	// Instead, noms breaks things down a bit differently:
 	// the database object manages communication with the server,
 	// and most history; the dataset is the working set with
 	// which we make updates and then push commits.
@@ -129,11 +130,14 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 		return nil, errors.Wrap(err, "NewApp failed to load existing state")
 	}
 
+	logger := honeycomb.Setup(log.New())
+	logger.Formatter = new(log.JSONFormatter)
+
 	return &App{
 		db:     db,
 		ds:     ds,
 		state:  state,
-		logger: log.New(),
+		logger: logger,
 		name:   name,
 		txIDs:  txIDs,
 		height: state.GetHeight(),
@@ -218,9 +222,20 @@ func (app *App) GetLogger() log.FieldLogger {
 	return app.logger
 }
 
-// SetLogger sets the logger to be used by this app
+// SetLogger sets the logger to be used by this app.
+// It has the side effect of setting up Honeycomb if it's possible to do so.
 func (app *App) SetLogger(logger log.FieldLogger) {
-	app.logger = logger
+	switch l := logger.(type) {
+	case *log.Logger:
+		app.logger = honeycomb.Setup(l)
+		app.logger = l
+	case *log.Entry:
+		l.Logger = honeycomb.Setup(l.Logger)
+		app.logger = l
+	default:
+		logger.Warnf("Logger was %T, so can't set up Honeycomb.", logger)
+		app.logger = logger
+	}
 }
 
 // LogState emits a log message detailing the current app state
@@ -235,7 +250,7 @@ func (app *App) LogState() {
 //
 // It also returns a decorated logger for request-internal logging.
 func (app *App) logRequestOptHt(method string, showHeight bool) log.FieldLogger {
-	decoratedLogger := app.logger.WithField("method", method)
+	decoratedLogger := app.GetLogger().WithField("method", method)
 	if showHeight {
 		decoratedLogger = decoratedLogger.WithField("height", app.Height())
 	}
