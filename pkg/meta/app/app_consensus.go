@@ -21,6 +21,7 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 	// commiting here ensures two things:
 	// 1. we actually have a head value
 	// 2. the initial validators are present from tendermint height 0
+	app.setHeight(app.height + 1)
 	err := app.commit()
 	if err != nil {
 		logger.Error(err.Error())

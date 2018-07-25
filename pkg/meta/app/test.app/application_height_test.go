@@ -34,11 +34,11 @@ func TestAppHeightFollowsTendermint(t *testing.T) {
 
 	require.Equal(t, uint64(0), app.Height())
 	app.InitChain(abci.RequestInitChain{})
-	require.Equal(t, uint64(0), app.Height())
+	require.Equal(t, uint64(1), app.Height())
 
 	apphash := app.Hash()
 
-	for i := uint64(1); i < 5; i++ {
+	for i := uint64(2); i < 6; i++ {
 		issueBlock(t, app, i)
 		require.Equal(t, i, app.Height())
 	}
@@ -56,7 +56,7 @@ func TestAppHeightAndHashUpdatePerTM(t *testing.T) {
 
 	require.Equal(t, uint64(0), app.Height())
 	app.InitChain(abci.RequestInitChain{})
-	require.Equal(t, uint64(0), app.Height())
+	require.Equal(t, uint64(1), app.Height())
 
 	tmBlock := uint64(0)
 	outerLimit := int(rand.Int31n(10))
