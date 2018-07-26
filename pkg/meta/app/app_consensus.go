@@ -21,7 +21,7 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 	// commiting here ensures two things:
 	// 1. we actually have a head value
 	// 2. the initial validators are present from tendermint height 0
-	app.setHeight(app.height + 1)
+	app.SetHeight(app.height + 1)
 	err := app.commit()
 	if err != nil {
 		logger.Error(err.Error())
@@ -38,7 +38,7 @@ func (app *App) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock
 	app.logRequest("BeginBlock")
 	// reset valset changes
 	app.ValUpdates = make([]types.Validator, 0)
-	app.setHeight(uint64(req.GetHeader().Height))
+	app.SetHeight(uint64(req.GetHeader().Height))
 	return types.ResponseBeginBlock{}
 }
 

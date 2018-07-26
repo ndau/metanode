@@ -144,8 +144,13 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 	}, nil
 }
 
-// update the app's tendermint height
-func (app *App) setHeight(h uint64) {
+// SetHeight updates the app's tendermint height
+//
+// Under normal circumstances, this should never be called by a child
+// application. Tendermint heights are automatically adjusted appropriately
+// by the metaapp. This function is public so that test fixtures can be
+// constructed with appropriate application heights.
+func (app *App) SetHeight(h uint64) {
 	app.state.SetHeight(app.db, h)
 	app.height = h
 }
