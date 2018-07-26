@@ -74,15 +74,21 @@ type App struct {
 	// Neither of those occasions also includes a Tendermint height
 	// increase. We need to keep them in sync.
 	//
-	// The default behavior of Metanode is to set an offset of 1
-	// in NewApp, and increment it in InitChain. However, this
-	// method remains available for app use in case the state manager
-	// changes the height elsewhere.
+	// Worse, due to a combination of tendermint limitations and efficiency
+	// concerns, we don't want to create a noms block if a tendermint block
+	// happens to be empty. This means that ultimately, the simplest solution
+	// is to just store the tendermint height every time we happen to commit,
+	// and cache it otherwise.
+	height uint64
+
+	// tendermint ignores the empty block creation and interval settings
+	// when the application hash changes, because it determines whether
+	// or not a block is empty by the app hash, not by counting the
+	// actual transactions.
 	//
-	// The proper value of heightOffset is always stored in the noms state,
-	// but this is a local cache for speed. This should _never_ be set
-	// directly; use setHeightOffset() instead.
-	heightOffset uint64
+	// The solution is to only actually commit a noms block when there
+	// are transactions pending. This variable keeps track of that.
+	transactionsPending uint64
 }
 
 // NewApp prepares a new App
@@ -128,20 +134,25 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 	logger.Formatter = new(log.JSONFormatter)
 
 	return &App{
-		db:           db,
-		ds:           ds,
-		state:        state,
-		logger:       logger,
-		name:         name,
-		txIDs:        txIDs,
-		heightOffset: state.GetHeightOffset(),
+		db:     db,
+		ds:     ds,
+		state:  state,
+		logger: logger,
+		name:   name,
+		txIDs:  txIDs,
+		height: state.GetHeight(),
 	}, nil
 }
 
-// update the app's height offset
-func (app *App) setHeightOffset(ho uint64) {
-	app.state.SetHeightOffset(app.db, ho)
-	app.heightOffset = ho
+// SetHeight updates the app's tendermint height
+//
+// Under normal circumstances, this should never be called by a child
+// application. Tendermint heights are automatically adjusted appropriately
+// by the metaapp. This function is public so that test fixtures can be
+// constructed with appropriate application heights.
+func (app *App) SetHeight(h uint64) {
+	app.state.SetHeight(app.db, h)
+	app.height = h
 }
 
 // SetChild specifies which child app is using this meta.App.
@@ -208,7 +219,6 @@ func (app *App) UpdateStateImmediately(updater func(state metast.State) (metast.
 	if err != nil {
 		return err
 	}
-	app.setHeightOffset(app.heightOffset + 1)
 	return app.commit()
 }
 
@@ -248,6 +258,7 @@ func (app *App) logRequestOptHt(method string, showHeight bool) log.FieldLogger 
 	decoratedLogger := app.GetLogger().WithField("method", method)
 	if showHeight {
 		decoratedLogger = decoratedLogger.WithField("height", app.Height())
+		decoratedLogger = decoratedLogger.WithField("hash", app.HashStr())
 	}
 	decoratedLogger.Info("received request")
 
@@ -282,7 +293,7 @@ func (app *App) commit() (err error) {
 
 // Height returns the current height of the application
 func (app *App) Height() uint64 {
-	return app.ds.HeadRef().Height() - app.heightOffset
+	return app.height
 }
 
 // Validators returns a list of the app's validators.

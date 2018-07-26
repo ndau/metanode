@@ -21,15 +21,13 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 	// commiting here ensures two things:
 	// 1. we actually have a head value
 	// 2. the initial validators are present from tendermint height 0
+	app.SetHeight(app.height + 1)
 	err := app.commit()
 	if err != nil {
 		logger.Error(err.Error())
 		// fail fast if we can't actually initialize the chain
 		panic(err.Error())
 	}
-	// increment the height offset here to compensate for committing
-	// the new, with-validator state
-	app.setHeightOffset(app.heightOffset + 1)
 
 	app.ValUpdates = make([]types.Validator, 0)
 	return
@@ -40,6 +38,7 @@ func (app *App) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock
 	app.logRequest("BeginBlock")
 	// reset valset changes
 	app.ValUpdates = make([]types.Validator, 0)
+	app.SetHeight(uint64(req.GetHeader().Height))
 	return types.ResponseBeginBlock{}
 }
 
@@ -54,7 +53,9 @@ func (app *App) DeliverTx(bytes []byte) (response types.ResponseDeliverTx) {
 	}
 	app.checkChild()
 	err = tx.Apply(app.childApp)
-	if err != nil {
+	if err == nil {
+		app.transactionsPending++
+	} else {
 		response.Code = uint32(code.ErrorApplyingTransaction)
 		response.Log = err.Error()
 	}
@@ -71,25 +72,31 @@ func (app *App) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
 //
 // Panics if InitChain has not been called.
 func (app *App) Commit() types.ResponseCommit {
-	logger := app.logRequest("Commit")
+	logger := app.logRequest("Commit").WithField("qty transactions in block", app.transactionsPending)
 
-	err := app.commit()
-	if err != nil {
-		logger.Error("Failed to commit block")
-		// A panic is appropriate here because the one thing we do _not_ want
-		// in the event that a block cannot be committed is for the app to
-		// just keep ticking along as if things were ok. Crashing the
-		// app should kill the whole node service, which in turn should
-		// give human operators a chance to figure out what went wrong.
-		//
-		// There is no noms documentation stating what kind of errors can
-		// be expected from this, but we'd expect them to be mostly I/O
-		// issues. In that case, restarting the service, potentially
-		// automatically, and recovering state from the rest of the chain
-		// is the best way forward.
-		panic(err)
+	if app.transactionsPending > 0 {
+		app.transactionsPending = 0
+		err := app.commit()
+		if err != nil {
+			logger.Error("Failed to commit block")
+			// A panic is appropriate here because the one thing we do _not_ want
+			// in the event that a block cannot be committed is for the app to
+			// just keep ticking along as if things were ok. Crashing the
+			// app should kill the whole node service, which in turn should
+			// give human operators a chance to figure out what went wrong.
+			//
+			// There is no noms documentation stating what kind of errors can
+			// be expected from this, but we'd expect them to be mostly I/O
+			// issues. In that case, restarting the service, potentially
+			// automatically, and recovering state from the rest of the chain
+			// is the best way forward.
+			panic(err)
+		}
+
+		logger.Info("Committed noms block")
+	} else {
+		logger.Info("Skipped noms commit")
 	}
 
-	logger.Info("Commit block")
 	return types.ResponseCommit{Data: app.Hash()}
 }
