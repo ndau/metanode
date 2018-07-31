@@ -6,6 +6,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/attic-labs/noms/go/d"
 	"github.com/attic-labs/noms/go/datas"
@@ -130,8 +131,10 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 		return nil, errors.Wrap(err, "NewApp failed to load existing state")
 	}
 
-	logger := honeycomb.Setup(log.New())
+	logger := log.New()
 	logger.Formatter = new(log.JSONFormatter)
+	logger.Out = os.Stderr
+	logger = honeycomb.Setup(logger)
 
 	return &App{
 		db:     db,
