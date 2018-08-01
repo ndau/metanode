@@ -254,8 +254,11 @@ func (app *App) LogState() {
 // logRequest emits a log message on request receipt
 //
 // It also returns a decorated logger for request-internal logging.
-func (app *App) logRequestOptHt(method string, showHeight bool) log.FieldLogger {
-	decoratedLogger := app.GetLogger().WithField("method", method)
+func (app *App) logRequestOptHt(method string, showHeight bool, logger log.FieldLogger) log.FieldLogger {
+	if logger == nil {
+		logger = app.GetLogger()
+	}
+	decoratedLogger := logger.WithField("method", method)
 	if showHeight {
 		decoratedLogger = decoratedLogger.WithField("height", app.Height())
 		decoratedLogger = decoratedLogger.WithField("hash", app.HashStr())
@@ -265,12 +268,12 @@ func (app *App) logRequestOptHt(method string, showHeight bool) log.FieldLogger 
 	return decoratedLogger
 }
 
-func (app *App) logRequest(m string) log.FieldLogger {
-	return app.logRequestOptHt(m, true)
+func (app *App) logRequest(m string, logger log.FieldLogger) log.FieldLogger {
+	return app.logRequestOptHt(m, true, logger)
 }
 
-func (app *App) logRequestBare(m string) log.FieldLogger {
-	return app.logRequestOptHt(m, false)
+func (app *App) logRequestBare(m string, logger log.FieldLogger) log.FieldLogger {
+	return app.logRequestOptHt(m, false, logger)
 }
 
 // Close closes the database connection opened on App creation

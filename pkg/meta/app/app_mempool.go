@@ -11,30 +11,29 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 )
 
-func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32, error) {
+func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32, log.FieldLogger, error) {
 	tx, err := metatx.Unmarshal(bytes, app.txIDs)
 	rc := uint32(code.OK)
 	if err != nil {
-		app.logger.WithFields(log.Fields{
-			"reason": err.Error(),
-			"tx":     fmt.Sprintf("%x", bytes),
-		}).Info("Encoding error")
-		return nil, uint32(code.EncodingError), err
+		logger := app.logger.WithError(err).WithField("tx bytes", fmt.Sprintf("%x", bytes))
+		logger.Info("Encoding error")
+		return nil, uint32(code.EncodingError), logger, err
 	}
+	logger := app.logger.WithField("tx hash", metatx.Hash(tx))
 	app.checkChild()
 	err = tx.Validate(app.childApp)
 	if err != nil {
-		app.logger.WithField("reason", err.Error()).Info("invalid tx")
+		logger.WithError(err).Info("invalid tx")
 		rc = uint32(code.InvalidTransaction)
-		return nil, rc, err
+		return nil, rc, logger, err
 	}
-	return tx, rc, nil
+	return tx, rc, logger, nil
 }
 
 // CheckTx validates a Transaction
 func (app *App) CheckTx(bytes []byte) (response types.ResponseCheckTx) {
-	app.logger.WithField("type", "CheckTx").Info("Received Request")
-	_, rc, err := app.validateTransactable(bytes)
+	_, rc, logger, err := app.validateTransactable(bytes)
+	logger.WithField("type", "CheckTx").Info("Received Request")
 	response.Code = rc
 	if err != nil {
 		response.Log = err.Error()

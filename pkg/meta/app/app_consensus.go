@@ -4,6 +4,7 @@ package app
 
 import (
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
+	log "github.com/sirupsen/logrus"
 	"github.com/tendermint/tendermint/abci/types"
 )
 
@@ -11,7 +12,7 @@ import (
 //
 // This includes saving the initial validator set in the local state.
 func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseInitChain) {
-	logger := app.logRequestBare("InitChain")
+	logger := app.logRequestBare("InitChain", nil)
 
 	// now add the initial validators set
 	for _, v := range req.Validators {
@@ -24,7 +25,7 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 	app.SetHeight(app.height + 1)
 	err := app.commit()
 	if err != nil {
-		logger.Error(err.Error())
+		logger.WithError(err).Error("InitChain app commit failed")
 		// fail fast if we can't actually initialize the chain
 		panic(err.Error())
 	}
@@ -35,7 +36,7 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 
 // BeginBlock tracks the block hash and header information
 func (app *App) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
-	app.logRequest("BeginBlock")
+	app.logRequest("BeginBlock", nil)
 	// reset valset changes
 	app.ValUpdates = make([]types.Validator, 0)
 	app.SetHeight(uint64(req.GetHeader().Height))
@@ -44,8 +45,8 @@ func (app *App) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock
 
 // DeliverTx services DeliverTx requests
 func (app *App) DeliverTx(bytes []byte) (response types.ResponseDeliverTx) {
-	app.logRequest("DeliverTx")
-	tx, rc, err := app.validateTransactable(bytes)
+	tx, rc, logger, err := app.validateTransactable(bytes)
+	app.logRequest("DeliverTx", logger)
 	response.Code = rc
 	if err != nil {
 		response.Log = err.Error()
@@ -64,7 +65,7 @@ func (app *App) DeliverTx(bytes []byte) (response types.ResponseDeliverTx) {
 
 // EndBlock updates the validator set
 func (app *App) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
-	app.logRequest("EndBlock")
+	app.logRequest("EndBlock", nil)
 	return types.ResponseEndBlock{ValidatorUpdates: app.ValUpdates}
 }
 
@@ -72,13 +73,15 @@ func (app *App) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
 //
 // Panics if InitChain has not been called.
 func (app *App) Commit() types.ResponseCommit {
-	logger := app.logRequest("Commit").WithField("qty transactions in block", app.transactionsPending)
+	var logger log.FieldLogger
+	logger = app.GetLogger().WithField("qty transactions in block", app.transactionsPending)
+	logger = app.logRequest("Commit", logger)
 
 	if app.transactionsPending > 0 {
 		app.transactionsPending = 0
 		err := app.commit()
 		if err != nil {
-			logger.Error("Failed to commit block")
+			logger.WithError(err).Error("Failed to commit block")
 			// A panic is appropriate here because the one thing we do _not_ want
 			// in the event that a block cannot be committed is for the app to
 			// just keep ticking along as if things were ok. Crashing the
