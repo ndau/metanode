@@ -219,7 +219,8 @@ func (app *App) UpdateStateImmediately(updater func(state metast.State) (metast.
 	if err != nil {
 		return err
 	}
-	return app.commit()
+	logger := app.GetLogger().WithField("method", "UpdateStateImmediately")
+	return app.commit(logger)
 }
 
 // GetLogger returns the application logger
@@ -286,11 +287,12 @@ func (app *App) Close() error {
 // This is different from Commit, which processes a Commit Tx!
 // However, they're related: think HARD before using this function
 // outside of func Commit.
-func (app *App) commit() (err error) {
+func (app *App) commit(logger log.FieldLogger) (err error) {
 	ds, err := app.state.Commit(app.db, app.ds)
 	if err == nil {
 		app.ds = ds
 	}
+	logger.WithError(err).Info("meta-application commit")
 	return err
 }
 

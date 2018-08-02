@@ -56,13 +56,21 @@ func (app *App) QueryError(err error, response *types.ResponseQuery, msg string)
 
 // Query determines the current value for a given key
 func (app *App) Query(request types.RequestQuery) (response types.ResponseQuery) {
-	app.logRequest("Info", nil)
+	var logger log.FieldLogger
+	logger = app.GetLogger().WithFields(log.Fields{
+		"app.height":   app.Height(),
+		"query.path":   request.GetPath(),
+		"query.data":   request.GetData(),
+		"query.height": request.GetHeight(),
+	})
+	app.logRequest("Query", logger)
 	response.Height = int64(app.Height())
 
 	handle, hasHandler := queryHandlers[request.GetPath()]
 	if !hasHandler {
 		response.Code = uint32(code.QueryError)
 		response.Log = "Unknown query path"
+		logger.Error("unknown query path")
 		return
 	}
 	app.checkChild()

@@ -33,7 +33,7 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 // CheckTx validates a Transaction
 func (app *App) CheckTx(bytes []byte) (response types.ResponseCheckTx) {
 	_, rc, logger, err := app.validateTransactable(bytes)
-	logger.WithField("type", "CheckTx").Info("Received Request")
+	app.logRequest("CheckTx", logger)
 	response.Code = rc
 	if err != nil {
 		response.Log = err.Error()

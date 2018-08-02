@@ -3,6 +3,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	log "github.com/sirupsen/logrus"
 	"github.com/tendermint/tendermint/abci/types"
@@ -23,7 +25,7 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 	// 1. we actually have a head value
 	// 2. the initial validators are present from tendermint height 0
 	app.SetHeight(app.height + 1)
-	err := app.commit()
+	err := app.commit(logger)
 	if err != nil {
 		logger.WithError(err).Error("InitChain app commit failed")
 		// fail fast if we can't actually initialize the chain
@@ -36,7 +38,14 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 
 // BeginBlock tracks the block hash and header information
 func (app *App) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
-	app.logRequest("BeginBlock", nil)
+	var logger log.FieldLogger
+	logger = app.GetLogger()
+	logger = logger.WithFields(log.Fields{
+		"tm.height": req.GetHeader().Height,
+		"tm.time":   req.GetHeader().Time,
+		"tm.hash":   fmt.Sprintf("%x", req.GetHash()),
+	})
+	logger = app.logRequest("BeginBlock", logger)
 	// reset valset changes
 	app.ValUpdates = make([]types.Validator, 0)
 	app.SetHeight(uint64(req.GetHeader().Height))
@@ -79,7 +88,7 @@ func (app *App) Commit() types.ResponseCommit {
 
 	if app.transactionsPending > 0 {
 		app.transactionsPending = 0
-		err := app.commit()
+		err := app.commit(logger)
 		if err != nil {
 			logger.WithError(err).Error("Failed to commit block")
 			// A panic is appropriate here because the one thing we do _not_ want
