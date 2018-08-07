@@ -1,6 +1,7 @@
 package testapp
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -35,4 +36,11 @@ func (a Add) Apply(appI interface{}) error {
 		*c += uint64(a.Qty)
 		return nil
 	})
+}
+
+// SignableBytes implements Transactable
+func (a Add) SignableBytes() []byte {
+	bytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(bytes, uint64(a.Qty))
+	return bytes
 }

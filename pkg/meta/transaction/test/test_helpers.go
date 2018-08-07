@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	tx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -26,6 +27,10 @@ func (Stringy) Apply(interface{}) error {
 	return nil
 }
 
+func (s Stringy) SignableBytes() []byte {
+	return []byte(s.S)
+}
+
 var _ tx.Transactable = (*Inty)(nil)
 
 type Inty struct {
@@ -38,6 +43,12 @@ func (Inty) Validate(interface{}) error {
 
 func (Inty) Apply(interface{}) error {
 	return nil
+}
+
+func (i Inty) SignableBytes() []byte {
+	bytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(bytes, uint64(i.I))
+	return bytes
 }
 
 var Tmap = map[tx.TxID]tx.Transactable{

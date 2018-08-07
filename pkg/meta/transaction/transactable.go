@@ -1,9 +1,12 @@
 package metatx
 
 import (
+	"crypto/md5"
+	"encoding/base64"
 	"fmt"
 	"reflect"
 
+	"github.com/oneiro-ndev/signature/pkg/signature"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 	"github.com/tinylib/msgp/msgp"
@@ -40,6 +43,7 @@ type Transactable interface {
 	// app := appInt.(*MyApp)
 	// ````
 	Validate(app interface{}) error
+
 	// Apply applies this transaction to the supplied application, updating its
 	// internal state as required.
 	//
@@ -53,6 +57,30 @@ type Transactable interface {
 	// app := appInt.(*MyApp)
 	// ```
 	Apply(app interface{}) error
+
+	// SignableBytes must return a representation of all the data in the
+	// transactable, except the signature. No particular ordering or schema
+	// is required, only that the bytes are computed deterministically and
+	// contain a complete representation of the transactable.
+	//
+	// For transactables with a signature field, this must _not_ include the
+	// signature.
+	//
+	// For transactables without a signature field, this must include all data.
+	// In that case, it is probably simplest to delegate this function
+	// to `.MarshalMsg(nil)`.
+	//
+	// Unfortunately, we can't enforce the above two restrictions in code; just
+	// trust that if you don't write your implementation with those semantics,
+	// you will encounter weird, hard-to-debug errors eventually.
+	//
+	// This is designed to support two use cases:
+	//
+	//   1.  Most transactables must be signed. Using this method simplifies
+	//       the problem of generating and validating signatures.
+	//   2.  For error tracing, we desire a short and unique-ish string which
+	//       can be computed for every transaction. We can get there from here.
+	SignableBytes() []byte
 }
 
 // AsTransaction builds a Transaction from any Transactable
@@ -126,4 +154,23 @@ func Marshal(txab Transactable, idMap TxIDMap) ([]byte, error) {
 		return nil, err
 	}
 	return tx.MarshalMsg(nil)
+}
+
+// Hash deterministically computes a probably-unique hash of the Transactable.
+//
+// This is intended for event tracing: it allows the Transactable to be followed
+// in logs through the complete round-trip of actions.
+func Hash(txab Transactable) string {
+	sum := md5.Sum(txab.SignableBytes())
+	return base64.RawStdEncoding.EncodeToString(sum[:])
+}
+
+// Sign the Transactable with the given private key
+func Sign(txab Transactable, key signature.PrivateKey) signature.Signature {
+	return key.Sign(txab.SignableBytes())
+}
+
+// Verify the Transactable's signature with the given public key
+func Verify(txab Transactable, sig signature.Signature, key signature.PublicKey) bool {
+	return key.Verify(txab.SignableBytes(), sig)
 }
