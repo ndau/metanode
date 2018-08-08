@@ -10,7 +10,7 @@ import (
 
 // Info services Info requests
 func (app *App) Info(req types.RequestInfo) (resInfo types.ResponseInfo) {
-	app.logRequest("Info")
+	app.logRequest("Info", nil)
 	return types.ResponseInfo{
 		LastBlockHeight:  int64(app.Height()),
 		LastBlockAppHash: app.Hash(),
@@ -19,11 +19,12 @@ func (app *App) Info(req types.RequestInfo) (resInfo types.ResponseInfo) {
 
 // SetOption sets application options, but is entirely undocumented
 func (app *App) SetOption(request types.RequestSetOption) (response types.ResponseSetOption) {
-	logger := app.logRequest("SetOption")
-	logger.WithFields(log.Fields{
+	var logger log.FieldLogger
+	logger = app.GetLogger().WithFields(log.Fields{
 		"key":   request.GetKey(),
 		"value": request.GetValue(),
-	}).Info("params")
+	})
+	app.logRequest("SetOption", logger)
 	return
 }
 
@@ -41,7 +42,7 @@ func RegisterQueryHandler(endpoint string, handler func(app interface{}, request
 // QueryError is a helper to generate a useful response if an error is not nil
 func (app *App) QueryError(err error, response *types.ResponseQuery, msg string) {
 	if err != nil {
-		app.GetLogger().WithField("error", err.Error()).Error(msg)
+		app.GetLogger().WithError(err).Error(msg)
 
 		if len(msg) > 0 {
 			msg = msg + ": "
@@ -55,13 +56,21 @@ func (app *App) QueryError(err error, response *types.ResponseQuery, msg string)
 
 // Query determines the current value for a given key
 func (app *App) Query(request types.RequestQuery) (response types.ResponseQuery) {
-	app.logRequest("Info")
+	var logger log.FieldLogger
+	logger = app.GetLogger().WithFields(log.Fields{
+		"app.height":   app.Height(),
+		"query.path":   request.GetPath(),
+		"query.data":   request.GetData(),
+		"query.height": request.GetHeight(),
+	})
+	app.logRequest("Query", logger)
 	response.Height = int64(app.Height())
 
 	handle, hasHandler := queryHandlers[request.GetPath()]
 	if !hasHandler {
 		response.Code = uint32(code.QueryError)
 		response.Log = "Unknown query path"
+		logger.Error("unknown query path")
 		return
 	}
 	app.checkChild()
