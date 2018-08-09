@@ -100,6 +100,17 @@ type App struct {
 // - `childState` is the child state manager. It must be initialized to its zero value.
 // - `txIDs` is the map of transaction ids to example structs
 func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap) (*App, error) {
+	return NewAppWithLogger(dbSpec, name, childState, txIDs, nil)
+}
+
+// NewAppWithLogger prepares a new App
+//
+// - `dbSpec` is the database spec string; empty or "mem" for in-memory,
+//     the connection path (parseable by noms)
+// - `name` is the name of this app
+// - `childState` is the child state manager. It must be initialized to its zero value.
+// - `txIDs` is the map of transaction ids to example structs
+func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap, logger log.FieldLogger) (*App, error) {
 	if len(dbSpec) == 0 {
 		dbSpec = "mem"
 	}
@@ -131,10 +142,12 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 		return nil, errors.Wrap(err, "NewApp failed to load existing state")
 	}
 
-	logger := log.New()
-	logger.Formatter = new(log.JSONFormatter)
-	logger.Out = os.Stderr
-	logger = honeycomb.Setup(logger)
+	if logger == nil {
+		logger = log.New()
+		logger.(*log.Logger).Formatter = new(log.JSONFormatter)
+		logger.(*log.Logger).Out = os.Stderr
+		logger = honeycomb.Setup(logger.(*log.Logger))
+	}
 
 	return &App{
 		db:     db,
