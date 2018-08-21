@@ -89,7 +89,7 @@ func AsTransaction(txab Transactable, idMap TxIDMap) (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	id, err := txIDOf(txab, idMap)
+	id, err := TxIDOf(txab, idMap)
 	if err != nil {
 		return nil, err
 	}
