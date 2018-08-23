@@ -23,17 +23,22 @@ type TxID uint8
 // Example objects should be empty objects of the relevant Transactable type.
 type TxIDMap map[TxID]Transactable
 
+// NameOf uses reflection to get the name associated with a Transactable
+func NameOf(txab Transactable) string {
+	return reflect.TypeOf(txab).Elem().Name()
+}
+
 // TxIDOf uses reflection to get the ID associated with a Transactable type.
 //
 // We're stuck with linear scan here, which isn't ideal, but for the
 // size of transactables we expect, the penalty shouldn't be too bad.
 func TxIDOf(txab Transactable, idMap TxIDMap) (TxID, error) {
-	txabName := reflect.TypeOf(txab).Elem().Name()
+	txabName := NameOf(txab)
 	if len(txabName) == 0 {
 		return 0, errors.New("anonymous types are not Transactable")
 	}
 	for id, example := range idMap {
-		if reflect.TypeOf(example).Elem().Name() == txabName {
+		if NameOf(example) == txabName {
 			return id, nil
 		}
 	}
