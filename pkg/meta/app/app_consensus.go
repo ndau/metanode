@@ -39,8 +39,7 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 // BeginBlock tracks the block hash and header information
 func (app *App) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
 	var logger log.FieldLogger
-	logger = app.GetLogger()
-	logger = logger.WithFields(log.Fields{
+	logger = app.DecoratedLogger().WithFields(log.Fields{
 		"tm.height": req.GetHeader().Height,
 		"tm.time":   req.GetHeader().Time,
 		"tm.hash":   fmt.Sprintf("%x", req.GetHash()),

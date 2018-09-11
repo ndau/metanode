@@ -19,7 +19,7 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 		logger.Info("Encoding error")
 		return nil, uint32(code.EncodingError), logger, err
 	}
-	logger := app.logger.WithField("tx hash", metatx.Hash(tx))
+	logger := app.DecoratedTxLogger(tx)
 	app.checkChild()
 	err = tx.Validate(app.childApp)
 	if err != nil {
