@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/oneiro-ndev/signature/pkg/signature"
+	"github.com/oneiro-ndev/ndaumath/pkg/signature"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 	"github.com/tinylib/msgp/msgp"
