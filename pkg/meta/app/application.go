@@ -47,7 +47,7 @@ type App struct {
 	state metast.Metastate
 
 	// List of pending validator updates
-	ValUpdates []abci.Validator
+	ValUpdates []abci.ValidatorUpdate
 
 	// This logger captures various ABCI events
 	logger log.FieldLogger

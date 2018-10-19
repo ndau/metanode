@@ -2,19 +2,21 @@ package state
 
 import (
 	"github.com/attic-labs/noms/go/datas"
-	"github.com/attic-labs/noms/go/marshal"
 	nt "github.com/attic-labs/noms/go/types"
 	util "github.com/oneiro-ndev/noms-util"
 	"github.com/pkg/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmconv "github.com/tendermint/tendermint/types"
 )
 
 // UpdateValidator updates the app's internal state with the given validator
-func (state *Metastate) UpdateValidator(db datas.Database, v abci.Validator) error {
-	pkS, err := marshal.Marshal(db, v.GetPubKey())
+func (state *Metastate) UpdateValidator(db datas.Database, v abci.ValidatorUpdate) error {
+	pk := v.GetPubKey()
+	pkB, err := pk.Marshal()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "UpdateValidator: marshalling update public key")
 	}
+	pkS := util.Blob(db, pkB)
 	if v.Power == 0 {
 		state.Validators = state.Validators.Edit().Remove(pkS).Map()
 	} else {
@@ -26,27 +28,60 @@ func (state *Metastate) UpdateValidator(db datas.Database, v abci.Validator) err
 
 // GetValidators returns a list of validators this app knows of
 func (state *Metastate) GetValidators() (validators []abci.Validator, err error) {
-	state.Validators.IterAll(func(key, value nt.Value) {
-		// this iterator interface doesn't allow for early failures,
-		// so we need to just skip work if an error occurs
+	state.Validators.Iter(func(key, value nt.Value) (stop bool) {
+		// extract pubkey from noms
+		var pkB []byte
+		pkB, err = util.Unblob(key.(nt.Blob))
 		if err != nil {
-			return
+			err = errors.Wrap(err, "GetValidators: unblob public key")
+			return true // stop iteration
 		}
-		pubKey := abci.PubKey{}
-		err := marshal.Unmarshal(key, &pubKey)
-		err = errors.Wrap(err, "GetValidators unmarshal public key")
+		pk := abci.PubKey{}
+		err = pk.Unmarshal(pkB)
 		if err != nil {
-			return
+			err = errors.Wrap(err, "GetValidators: unmarshal public key")
+			return true
 		}
-		power, err := util.IntFromBlob(value.(nt.Blob))
-		err = errors.Wrap(err, "GetValidators IntFromBlob power")
+
+		// transform pubkey to address
+		// note that this conversion function is specifically marked as UNSTABLE
+		// in the TM source, so we should expect this to break.
+		// OTOH, there's apparently no stable way to make this conversion happen,
+		// so here we are.
+		// https://github.com/tendermint/tendermint/blob/0c9c3292c918617624f6f3fbcd95eceade18bcd5/types/protobuf.go#L170-L171
+		tcpk, err := tmconv.PB2TM.PubKey(pk)
 		if err != nil {
-			return
+			err = errors.Wrap(err, "GetValidators: convert tm.abci pk into tm.crypto pk")
+			return true
 		}
+		address := tcpk.Address()
+
+		// extract power from noms
+		var vblob nt.Blob
+		var ok bool
+		vblob, ok = value.(nt.Blob)
+		if !ok {
+			var vbptr *nt.Blob
+			vbptr, ok = value.(*nt.Blob)
+			if !ok {
+				err = errors.New("GetValidators: power not encoded as blob")
+				return true
+			}
+			vblob = *vbptr
+		}
+		var power util.Int
+		power, err = util.IntFromBlob(vblob)
+		if err != nil {
+			err = errors.Wrap(err, "GetValidators: IntFromBlob power")
+			return true
+		}
+
+		// finish
 		validators = append(validators, abci.Validator{
-			PubKey: pubKey,
-			Power:  int64(power),
+			Address: address,
+			Power:   int64(power),
 		})
+		return
 	})
 	return
 }

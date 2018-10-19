@@ -7,13 +7,13 @@ import (
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	log "github.com/sirupsen/logrus"
-	"github.com/tendermint/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // InitChain performs necessary chain initialization.
 //
 // This includes saving the initial validator set in the local state.
-func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseInitChain) {
+func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInitChain) {
 	logger := app.logRequestBare("InitChain", nil)
 
 	// now add the initial validators set
@@ -32,12 +32,12 @@ func (app *App) InitChain(req types.RequestInitChain) (response types.ResponseIn
 		panic(err.Error())
 	}
 
-	app.ValUpdates = make([]types.Validator, 0)
+	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
 	return
 }
 
 // BeginBlock tracks the block hash and header information
-func (app *App) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
+func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
 		"tm.height": req.GetHeader().Height,
@@ -46,13 +46,13 @@ func (app *App) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock
 	})
 	logger = app.logRequest("BeginBlock", logger)
 	// reset valset changes
-	app.ValUpdates = make([]types.Validator, 0)
+	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
 	app.SetHeight(uint64(req.GetHeader().Height))
-	return types.ResponseBeginBlock{}
+	return abci.ResponseBeginBlock{}
 }
 
 // DeliverTx services DeliverTx requests
-func (app *App) DeliverTx(bytes []byte) (response types.ResponseDeliverTx) {
+func (app *App) DeliverTx(bytes []byte) (response abci.ResponseDeliverTx) {
 	tx, rc, logger, err := app.validateTransactable(bytes)
 	app.logRequest("DeliverTx", logger)
 	response.Code = rc
@@ -72,15 +72,15 @@ func (app *App) DeliverTx(bytes []byte) (response types.ResponseDeliverTx) {
 }
 
 // EndBlock updates the validator set
-func (app *App) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
+func (app *App) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 	app.logRequest("EndBlock", nil)
-	return types.ResponseEndBlock{ValidatorUpdates: app.ValUpdates}
+	return abci.ResponseEndBlock{ValidatorUpdates: app.ValUpdates}
 }
 
 // Commit saves a new version
 //
 // Panics if InitChain has not been called.
-func (app *App) Commit() types.ResponseCommit {
+func (app *App) Commit() abci.ResponseCommit {
 	var logger log.FieldLogger
 	logger = app.GetLogger().WithField("qty transactions in block", app.transactionsPending)
 	logger = app.logRequest("Commit", logger)
@@ -109,5 +109,5 @@ func (app *App) Commit() types.ResponseCommit {
 		logger.Info("Skipped noms commit")
 	}
 
-	return types.ResponseCommit{Data: app.Hash()}
+	return abci.ResponseCommit{Data: app.Hash()}
 }
