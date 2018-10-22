@@ -149,6 +149,13 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		logger = honeycomb.Setup(logger.(*log.Logger))
 	}
 
+	err = state.SearchIndex.Connect()	
+	if err != nil {
+		// FIXME: Uncomment this when we're ready to require a running redis server.
+		//return nil, errors.Wrap(err, "NewApp failed to connect to search index")
+		logger.Warn("Unable to connect to search index")
+	}
+
 	return &App{
 		db:     db,
 		ds:     ds,
