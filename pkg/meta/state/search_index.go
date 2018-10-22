@@ -8,7 +8,7 @@ type SearchIndex struct {
 	client *redis.Client
 }
 
-func RedisExample() *SearchIndex {
+func NewSearchIndex() *SearchIndex {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379", // default redis server
 		Password: "",               // no password
