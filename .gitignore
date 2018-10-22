@@ -31,5 +31,9 @@ github_chaos_deploy
 # Editor customization
 .vscode/
 
+# emacs support files
+*~
+.#*
+
 # OSX
 .DS_Store
