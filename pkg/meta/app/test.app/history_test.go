@@ -13,7 +13,7 @@ import (
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	util "github.com/oneiro-ndev/noms-util"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 type blockFactory struct {
@@ -23,8 +23,8 @@ type blockFactory struct {
 }
 
 func (bf *blockFactory) make(txab ...metatx.Transactable) {
-	bf.app.BeginBlock(types.RequestBeginBlock{
-		Header: types.Header{
+	bf.app.BeginBlock(abci.RequestBeginBlock{
+		Header: abci.Header{
 			Height: bf.height,
 		},
 	})
@@ -36,7 +36,7 @@ func (bf *blockFactory) make(txab ...metatx.Transactable) {
 		require.True(bf.t, dtr.IsOK())
 	}
 
-	bf.app.EndBlock(types.RequestEndBlock{Height: bf.height})
+	bf.app.EndBlock(abci.RequestEndBlock{Height: bf.height})
 	bf.app.Commit()
 
 	require.Equal(bf.t, bf.app.Height(), uint64(bf.height))

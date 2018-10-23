@@ -8,7 +8,7 @@ import (
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	"github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	log "github.com/sirupsen/logrus"
-	"github.com/tendermint/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32, log.FieldLogger, error) {
@@ -31,7 +31,7 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 }
 
 // CheckTx validates a Transaction
-func (app *App) CheckTx(bytes []byte) (response types.ResponseCheckTx) {
+func (app *App) CheckTx(bytes []byte) (response abci.ResponseCheckTx) {
 	_, rc, logger, err := app.validateTransactable(bytes)
 	app.logRequest("CheckTx", logger)
 	response.Code = rc
