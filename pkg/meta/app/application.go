@@ -11,6 +11,7 @@ import (
 	"github.com/attic-labs/noms/go/d"
 	"github.com/attic-labs/noms/go/datas"
 	"github.com/attic-labs/noms/go/spec"
+	metasearch "github.com/oneiro-ndev/metanode/pkg/meta/search"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	"github.com/oneiro-ndev/o11y/pkg/honeycomb"
@@ -45,6 +46,9 @@ type App struct {
 	// in turn means that we need to persist the state between transactions
 	// in memory, which means keeping track of this state object.
 	state metast.Metastate
+
+	// Access to blockchain indexing and searching
+	search *metasearch.SearchClient
 
 	// List of pending validator updates
 	ValUpdates []abci.ValidatorUpdate
@@ -142,6 +146,8 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		return nil, errors.Wrap(err, "NewApp failed to load existing state")
 	}
 
+	search := metasearch.NewSearchClient()
+
 	if logger == nil {
 		logger = log.New()
 		logger.(*log.Logger).Formatter = new(log.JSONFormatter)
@@ -153,6 +159,7 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		db:     db,
 		ds:     ds,
 		state:  state,
+		search: search,
 		logger: logger,
 		name:   name,
 		txIDs:  txIDs,

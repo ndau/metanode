@@ -18,7 +18,6 @@ type Metastate struct {
 	Validators nt.Map
 	Height     util.Int
 	ChildState State
-	Search     *SearchClient
 }
 
 const metastateName = "metastate"
@@ -28,7 +27,6 @@ func newMetaState(db datas.Database, child State) Metastate {
 		Validators: nt.NewMap(db),
 		Height:     util.Int(0),
 		ChildState: child,
-		Search:     NewSearchClient(),
 	}
 }
 
@@ -91,10 +89,6 @@ func (state *Metastate) Load(db datas.Database, ds datas.Dataset, child State) (
 		if err != nil {
 			return ds, errors.Wrap(err, "Load failed to commit new head")
 		}
-	}
-
-	if state.Search == nil {
-		state.Search = NewSearchClient()
 	}
 
 	return ds, state.unmarshal(head, child)
