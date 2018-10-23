@@ -15,20 +15,20 @@ import (
 // Metastate wraps the client app state and keeps track of bookkeeping data
 // such as the validator set and height offset.
 type Metastate struct {
-	Validators  nt.Map
-	Height      util.Int
-	ChildState  State
-	SearchIndex *SearchIndex
+	Validators nt.Map
+	Height     util.Int
+	ChildState State
+	Search     *SearchClient
 }
 
 const metastateName = "metastate"
 
 func newMetaState(db datas.Database, child State) Metastate {
 	return Metastate{
-		Validators:  nt.NewMap(db),
-		Height:      util.Int(0),
-		ChildState:  child,
-		SearchIndex: NewSearchIndex(),
+		Validators: nt.NewMap(db),
+		Height:     util.Int(0),
+		ChildState: child,
+		Search:     NewSearchClient(),
 	}
 }
 
@@ -93,8 +93,8 @@ func (state *Metastate) Load(db datas.Database, ds datas.Dataset, child State) (
 		}
 	}
 
-	if state.SearchIndex == nil {
-		state.SearchIndex = NewSearchIndex()
+	if state.Search == nil {
+		state.Search = NewSearchClient()
 	}
 
 	return ds, state.unmarshal(head, child)
