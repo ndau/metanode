@@ -6,6 +6,7 @@ import (
 	util "github.com/oneiro-ndev/noms-util"
 	"github.com/pkg/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto"
 	tmconv "github.com/tendermint/tendermint/types"
 )
 
@@ -49,7 +50,8 @@ func (state *Metastate) GetValidators() (validators []abci.Validator, err error)
 		// OTOH, there's apparently no stable way to make this conversion happen,
 		// so here we are.
 		// https://github.com/tendermint/tendermint/blob/0c9c3292c918617624f6f3fbcd95eceade18bcd5/types/protobuf.go#L170-L171
-		tcpk, err := tmconv.PB2TM.PubKey(pk)
+		var tcpk crypto.PubKey
+		tcpk, err = tmconv.PB2TM.PubKey(pk)
 		if err != nil {
 			err = errors.Wrap(err, "GetValidators: convert tm.abci pk into tm.crypto pk")
 			return true
