@@ -216,6 +216,11 @@ func (app *App) GetState() metast.State {
 	return app.state.ChildState
 }
 
+// GetSearch returns the app's search client
+func (app *App) GetSearch() *metasearch.SearchClient {
+	return app.search
+}
+
 // UpdateState updates the current child application state
 //
 // Returning a nil state from the internal function is an error.
