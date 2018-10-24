@@ -11,6 +11,7 @@ import (
 	"github.com/attic-labs/noms/go/d"
 	"github.com/attic-labs/noms/go/datas"
 	"github.com/attic-labs/noms/go/spec"
+	"github.com/oneiro-ndev/chaos/pkg/chaos/backing"
 	metasearch "github.com/oneiro-ndev/metanode/pkg/meta/search"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -147,6 +148,10 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 	}
 
 	search := metasearch.NewSearchClient()
+	err = backing.KeyHistoryScan(search, db, ds)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewApp unable to perform initial indexing")
+	}
 
 	if logger == nil {
 		logger = log.New()
