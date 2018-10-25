@@ -113,18 +113,12 @@ func (searchClient *SearchClient) ZAdd(key string, score float64, value string) 
 		Member: value,
 	}
 
-	var count int64
-	count, err = searchClient.client.ZAdd(key, member).Result()
+	// We ignore the count returned.  The caller should be adding unique entries, and so the
+	// count shoud always be 1.  But in the case of the caller attempting to add an entry that
+	// we already have added, it'll update the index and return 0.  There's no error either
+	// way so we have no reason to consider it.
+	_, err = searchClient.client.ZAdd(key, member).Result()
 	if err != nil {
-		return err
-	}
-
-	// If we didn't add exactly one element, we consider it a failure.
-	if count != 1 {
-		err = errors.New(errorMessage(
-			"ZAdd",
-			fmt.Sprintf("Unable to ZADD %s=%s with score=%f", key, value, score),
-		))
 		return err
 	}
 
@@ -151,6 +145,7 @@ func (searchClient *SearchClient) ZScan(
 			return err
 		}
 
+		// ZSCAN returns values and scores on their own rows, iterate two at a time.
 		len := len(results)
 		for i := 0; i < len; i += 2 {
 			value := results[i]

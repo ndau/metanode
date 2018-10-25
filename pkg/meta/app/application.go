@@ -148,7 +148,7 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 	}
 
 	search := metasearch.NewSearchClient()
-	err = backing.KeyHistoryScan(search, db, ds)
+	err = backing.KeyHistoryIndex(search, db, ds)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewApp unable to perform initial indexing")
 	}
