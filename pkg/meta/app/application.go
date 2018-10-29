@@ -11,7 +11,6 @@ import (
 	"github.com/attic-labs/noms/go/d"
 	"github.com/attic-labs/noms/go/datas"
 	"github.com/attic-labs/noms/go/spec"
-	"github.com/oneiro-ndev/chaos/pkg/chaos/backing"
 	metasearch "github.com/oneiro-ndev/metanode/pkg/meta/search"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -102,11 +101,10 @@ type App struct {
 // - `dbSpec` is the database spec string; empty or "mem" for in-memory,
 //     the connection path (parseable by noms)
 // - `name` is the name of this app
-// - `searchVersion` is the format version of the search index used by this app.
 // - `childState` is the child state manager. It must be initialized to its zero value.
 // - `txIDs` is the map of transaction ids to example structs
-func NewApp(dbSpec string, name string, searchVersion int, childState metast.State, txIDs metatx.TxIDMap) (*App, error) {
-	return NewAppWithLogger(dbSpec, name, searchVersion, childState, txIDs, nil)
+func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap) (*App, error) {
+	return NewAppWithLogger(dbSpec, name, childState, txIDs, nil)
 }
 
 // NewAppWithLogger prepares a new App
@@ -114,10 +112,9 @@ func NewApp(dbSpec string, name string, searchVersion int, childState metast.Sta
 // - `dbSpec` is the database spec string; empty or "mem" for in-memory,
 //     the connection path (parseable by noms)
 // - `name` is the name of this app
-// - `searchVersion` is the format version of the search index used by this app.
 // - `childState` is the child state manager. It must be initialized to its zero value.
 // - `txIDs` is the map of transaction ids to example structs
-func NewAppWithLogger(dbSpec string, name string, searchVersion int, childState metast.State, txIDs metatx.TxIDMap, logger log.FieldLogger) (*App, error) {
+func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap, logger log.FieldLogger) (*App, error) {
 	if len(dbSpec) == 0 {
 		dbSpec = "mem"
 	}
@@ -149,12 +146,7 @@ func NewAppWithLogger(dbSpec string, name string, searchVersion int, childState 
 		return nil, errors.Wrap(err, "NewApp failed to load existing state")
 	}
 
-	// Using a negative search version disables the use of a search index.
-	search := metasearch.NewSearchClient(name, searchVersion)
-	err = backing.KeyHistoryIndex(search, db, ds)
-	if err != nil {
-		return nil, errors.Wrap(err, "NewApp unable to perform initial indexing")
-	}
+	search := metasearch.NewSearchClient()
 
 	if logger == nil {
 		logger = log.New()

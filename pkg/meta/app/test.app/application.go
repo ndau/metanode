@@ -19,7 +19,7 @@ type TestApp struct {
 func NewTestApp() (*TestApp, error) {
 	dbSpec := "mem"
 	name := "TestApp"
-	metaapp, err := meta.NewApp(dbSpec, name, 0, &TestState{}, TxIDs)
+	metaapp, err := meta.NewApp(dbSpec, name, &TestState{}, TxIDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewApp failed to create metaapp")
 	}

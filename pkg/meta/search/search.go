@@ -22,47 +22,51 @@ type SearchClient struct {
 	Height uint64        // The blockchain height that we've indexed up to.
 }
 
-// Search factory method.
+// Factory method.  Must call Init() before using the returned search client.
+func NewSearchClient() *SearchClient {
+	return &SearchClient{
+		client: nil,
+		Height: 0,
+	}
+}
+
+// Call this once after creating a new SearchClient, and before indexing and searching.
 // Applications must supply a unique name so that we can map it to a unique redis database number.
 // Pass in a version number for your client.  Start it at zero.  If you later increment it,
 // the client will wipe the current database associated with the given name.
-func NewSearchClient(name string, version int) *SearchClient {
+func (search *SearchClient) Init(name string, version int) (err error) {
 	if name == "" {
-		panic("SearchClient name must be non-empty")
+		err = errors.New("SearchClient name must be non-empty")
+		return err
 	}
 
 	if version < 0 {
-		panic("SearchClient version must be non-negative")
+		err = errors.New("SearchClient version must be non-negative")
+		return err
 	}
 
-	systemClient := redis.NewClient(&redis.Options{
+	// Create the system client.
+	search.client = redis.NewClient(&redis.Options{
 		Addr:      redisAddr, 
 		Password:  redisPass,
 		DB:        0, // We start with the zero'th db to grab search system variables.
 	})
 
-	search := &SearchClient{
-		client: systemClient,
-		Height: 0,
-	}
-
 	// Test connection to the search system client.
-	err := search.testConnection()
+	err = search.testConnection()
 	if err != nil {
-		// FIXME: Figure out how to run in a dormant mode for tests, but panic otherwise.
-		//panic(err)
-		return nil
+		return err
 	}
 
 	// With the system client active, get the redis database index.
 	var dbIndex int64
 	dbIndex, err = search.getDatabaseIndex(name)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// No longer need the system client.
-	systemClient.Close()
+	search.client.Close()
 
 	// Now that we know the database index we can create and select the main client.
 	// TODO: Would be nice to use `SELECT dbIndex` instead, not close/create another client.
@@ -75,16 +79,16 @@ func NewSearchClient(name string, version int) *SearchClient {
 	// Test connection to the main client.
 	err = search.testConnection()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Flush the database if the caller has incremented the version since the last time.
 	err = search.processSearchVersion(version)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	return search
+	return nil
 }
 
 // Helper function for creating consistent error messages from Search methods.
