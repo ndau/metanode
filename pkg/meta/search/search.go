@@ -41,7 +41,7 @@ func NewSearchClient(name string, version int) *SearchClient {
 		DB:        0, // We start with the zero'th db to grab search system variables.
 	})
 
-	search := SearchClient{
+	search := &SearchClient{
 		client: systemClient,
 		Height: 0,
 	}
@@ -65,6 +65,7 @@ func NewSearchClient(name string, version int) *SearchClient {
 	systemClient.Close()
 
 	// Now that we know the database index we can create and select the main client.
+	// TODO: Would be nice to use `SELECT dbIndex` instead, not close/create another client.
 	search.client = redis.NewClient(&redis.Options{
 		Addr:      redisAddr, 
 		Password:  redisPass,
@@ -83,7 +84,7 @@ func NewSearchClient(name string, version int) *SearchClient {
 		panic(err)
 	}
 
-	return &search
+	return search
 }
 
 // Helper function for creating consistent error messages from Search methods.
@@ -190,9 +191,7 @@ func (search *SearchClient) processSearchVersion(version int) (err error) {
 		}
 	} else {
 		// The version was incremented from what we have stored in the database.
-		// Reset everything.
-
-		// Flush (reset) the database at the appropriate db index.
+		// Wipe the database at the currently selected db index.
 		_, err = search.FlushDB()
 		if err != nil {
 			return err
@@ -286,7 +285,7 @@ func (search *SearchClient) Set(key string, value interface{}) (result string, e
 	return result, err
 }
 
-// Wrapper for redis GET.
+// Wrapper for redis GET.  Returns empty string (not nil) if the key doesn't exist.
 func (search *SearchClient) Get(key string) (result string, err error) {
 	err = search.testValidity("Get")
 	if err != nil {
@@ -294,6 +293,9 @@ func (search *SearchClient) Get(key string) (result string, err error) {
 	}
 
 	result, err = search.client.Get(key).Result()
+	if err == redis.Nil {
+		return "", nil
+	}
 
 	return result, err
 }
