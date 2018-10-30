@@ -5,10 +5,17 @@ package app
 import (
 	"fmt"
 
+	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
+
+type AppSearchClient interface {
+	OnBeginBlock(height uint64) error
+	OnDeliverTx(metatx.Transactable) error
+	OnCommit() error
+}
 
 // InitChain performs necessary chain initialization.
 //
@@ -47,7 +54,18 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	logger = app.logRequest("BeginBlock", logger)
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
-	app.SetHeight(uint64(req.GetHeader().Height))
+	height := uint64(req.GetHeader().Height)
+	app.SetHeight(height)
+
+	// Tell the search we have a new block on the way.
+	search := app.GetSearch()
+	if search != nil {
+		err := search.OnBeginBlock(height)
+		if err != nil {
+			logger.WithError(err).Error("Failed to begin block for search")
+		}
+	}
+
 	return abci.ResponseBeginBlock{}
 }
 
@@ -64,6 +82,15 @@ func (app *App) DeliverTx(bytes []byte) (response abci.ResponseDeliverTx) {
 	err = tx.Apply(app.childApp)
 	if err == nil {
 		app.transactionsPending++
+
+		// Update the search with the new transaction.
+		search := app.GetSearch()
+		if search != nil {
+			err = search.OnDeliverTx(tx)
+			if err != nil {
+				logger.WithError(err).Error("Failed to deliver tx for search")
+			}
+		}
 	} else {
 		response.Code = uint32(code.ErrorApplyingTransaction)
 		response.Log = err.Error()
@@ -102,6 +129,15 @@ func (app *App) Commit() abci.ResponseCommit {
 			// automatically, and recovering state from the rest of the chain
 			// is the best way forward.
 			panic(err)
+		}
+
+		// Index the transactions in the new block.
+		search := app.GetSearch()
+		if search != nil {
+			err = search.OnCommit()
+			if err != nil {
+				logger.WithError(err).Error("Failed to commit for search")
+			}
 		}
 
 		logger.Info("Committed noms block")

@@ -19,14 +19,14 @@ var heightKey  = "height"  // Per-database key that stores the height that we've
 
 type SearchClient struct {
 	client *redis.Client // Underlying redis database client.
-	Height uint64        // The blockchain height that we've indexed up to.
+	height uint64        // The blockchain height that we've indexed up to.
 }
 
 // Factory method.  Must call Init() before using the returned search client.
 func NewSearchClient() *SearchClient {
 	return &SearchClient{
 		client: nil,
-		Height: 0,
+		height: 0,
 	}
 }
 
@@ -186,9 +186,9 @@ func (search *SearchClient) processSearchVersion(version int) (err error) {
 			return err
 		}
 
-		// Edge case: leave the default of search.Height = 0 if nothing was stored.
+		// Edge case: leave the default of search.height = 0 if nothing was stored.
 		if heightString != "" {
-			search.Height, err = strconv.ParseUint(heightString, 10, 64)
+			search.height, err = strconv.ParseUint(heightString, 10, 64)
 			if err != nil {
 				return err
 			}
@@ -202,7 +202,7 @@ func (search *SearchClient) processSearchVersion(version int) (err error) {
 		}
 
 		// Set the height for completeness.
-		// We leave the default of search.Height = 0 in this case.
+		// We leave the default of search.height = 0 in this case.
 		_, err = search.Set(heightKey, 0)
 		if err != nil {
 			return err
@@ -242,8 +242,8 @@ func (search *SearchClient) SetHeight(height uint64) (err error) {
 		return err
 	}
 
-	if height > search.Height {
-		search.Height = height
+	if height > search.height {
+		search.height = height
 		_, err = search.Set(heightKey, height)
 		if err != nil {
 			return err
@@ -252,7 +252,12 @@ func (search *SearchClient) SetHeight(height uint64) (err error) {
 
 	return nil
 }
-	
+
+// Get the high water mark (height) we've indexed to so far.
+func (search *SearchClient) GetHeight() uint64 {
+	return search.height
+}
+
 // Wrapper for redis PING.  Returns "PONG" on success.
 func (search *SearchClient) Ping() (result string, err error) {
 	err = search.testValidity("Ping")
