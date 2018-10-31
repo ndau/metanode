@@ -10,12 +10,12 @@ import (
 
 // Redis config.
 var redisAddr = "localhost:6379" // default redis server
-var redisPass = "" 		 // no password
+var redisPass = ""               // no password
 
 // Constants.
 var databasesKey = "databases" // Search system variable that stores the redis db numbers we use.
-var versionKey = "version" // Per-database key that stores the database format version.
-var heightKey  = "height"  // Per-database key that stores the height that we've indexed up to.
+var versionKey = "version"     // Per-database key that stores the database format version.
+var heightKey = "height"       // Per-database key that stores the height that we've indexed up to.
 
 type SearchClient struct {
 	client *redis.Client // Underlying redis database client.
@@ -47,9 +47,9 @@ func (search *SearchClient) Init(name string, version int) (err error) {
 
 	// Create the system client.
 	search.client = redis.NewClient(&redis.Options{
-		Addr:      redisAddr, 
-		Password:  redisPass,
-		DB:        0, // We start with the zero'th db to grab search system variables.
+		Addr:     redisAddr,
+		Password: redisPass,
+		DB:       0, // We start with the zero'th db to grab search system variables.
 	})
 
 	// Test connection to the search system client.
@@ -71,9 +71,9 @@ func (search *SearchClient) Init(name string, version int) (err error) {
 	// Now that we know the database index we can create and select the main client.
 	// TODO: Would be nice to use `SELECT dbIndex` instead, not close/create another client.
 	search.client = redis.NewClient(&redis.Options{
-		Addr:      redisAddr, 
-		Password:  redisPass,
-		DB:        int(dbIndex),
+		Addr:     redisAddr,
+		Password: redisPass,
+		DB:       int(dbIndex),
 	})
 
 	// Test connection to the main client.
@@ -354,8 +354,8 @@ func (search *SearchClient) ZAdd(
 		return 0, err
 	}
 
-	member := redis.Z {
-		Score: score,
+	member := redis.Z{
+		Score:  score,
 		Member: value,
 	}
 
@@ -392,7 +392,7 @@ func (search *SearchClient) ZScan(
 		for i := 0; i < len; i += 2 {
 			value := results[i]
 			var score float64
-			score, err = strconv.ParseFloat(results[i + 1], 64)
+			score, err = strconv.ParseFloat(results[i+1], 64)
 			if err != nil {
 				return err
 			}
