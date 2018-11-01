@@ -8,14 +8,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Redis config.
-var redisAddr = "localhost:6379" // default redis server
-var redisPass = ""               // no password
-
-// Constants.
 var databasesKey = "databases" // Search system variable that stores the redis db numbers we use.
-var versionKey = "version"     // Per-database key that stores the database format version.
-var heightKey = "height"       // Per-database key that stores the height that we've indexed up to.
+var versionKey = "version"     // Per-database key storing the database format version.
+var heightKey = "height"       // Per-database key storing the height that we've indexed up to.
 
 type SearchClient struct {
 	client *redis.Client // Underlying redis database client.
@@ -32,10 +27,11 @@ func NewSearchClient() *SearchClient {
 
 // Call this once after creating a new SearchClient, and before indexing and searching.
 // Applications must supply a unique name so that we can map it to a unique redis database number.
+// The address should contain ip and port.  e.g. "localhost:6379".
 // Pass in a version number for your client.  Start it at zero.  If you later increment it,
 // the client will wipe the current database associated with the given name.
-func (search *SearchClient) Init(name string, version int) (err error) {
-	if name == "" {
+func (search *SearchClient) Init(name string, address string, version int) (err error) {
+	if len(name) == 0 {
 		err = errors.New("SearchClient name must be non-empty")
 		return err
 	}
@@ -47,13 +43,12 @@ func (search *SearchClient) Init(name string, version int) (err error) {
 
 	// Create the system client.
 	search.client = redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: redisPass,
-		DB:       0, // We start with the zero'th db to grab search system variables.
+		Addr: address,
+		DB:   0, // We start with the zero'th db to grab search system variables.
 	})
 
 	// Test connection to the search system client.
-	err = search.testConnection()
+	err = search.testConnection(address)
 	if err != nil {
 		return err
 	}
@@ -71,13 +66,12 @@ func (search *SearchClient) Init(name string, version int) (err error) {
 	// Now that we know the database index we can create and select the main client.
 	// TODO: Would be nice to use `SELECT dbIndex` instead, not close/create another client.
 	search.client = redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: redisPass,
-		DB:       int(dbIndex),
+		Addr: address,
+		DB:   int(dbIndex),
 	})
 
 	// Test connection to the main client.
-	err = search.testConnection()
+	err = search.testConnection(address)
 	if err != nil {
 		return err
 	}
@@ -97,12 +91,12 @@ func errorMessage(method string, message string) string {
 }
 
 // Test connection to the redis service.
-func (search *SearchClient) testConnection() error {
+func (search *SearchClient) testConnection(address string) error {
 	pong, err := search.Ping()
 	if err != nil {
 		msg := errorMessage(
 			"testConnection",
-			fmt.Sprintf("Ping failed, is redis running at %s?", redisAddr))
+			fmt.Sprintf("Ping failed, is redis running at %s?", address))
 		return errors.Wrap(err, msg)
 	}
 
@@ -171,7 +165,7 @@ func (search *SearchClient) processSearchVersion(version int) (err error) {
 	}
 
 	// Edge case: leave the default existingVersion = -1 if nothing was stored.
-	if versionString != "" {
+	if len(versionString) != 0 {
 		existingVersion, err = strconv.ParseInt(versionString, 10, 32)
 		if err != nil {
 			return err
@@ -187,7 +181,7 @@ func (search *SearchClient) processSearchVersion(version int) (err error) {
 		}
 
 		// Edge case: leave the default of search.height = 0 if nothing was stored.
-		if heightString != "" {
+		if len(heightString) != 0 {
 			search.height, err = strconv.ParseUint(heightString, 10, 64)
 			if err != nil {
 				return err
