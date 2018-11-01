@@ -8,81 +8,44 @@ import (
 	"github.com/pkg/errors"
 )
 
-var databasesKey = "databases" // Search system variable that stores the redis db numbers we use.
-var versionKey = "version"     // Per-database key storing the database format version.
-var heightKey = "height"       // Per-database key storing the height that we've indexed up to.
+var versionKey = "version" // Per-database key storing the database format version.
+var heightKey = "height"   // Per-database key storing the height that we've indexed up to.
 
 type SearchClient struct {
 	client *redis.Client // Underlying redis database client.
 	height uint64        // The blockchain height that we've indexed up to.
 }
 
-// Factory method.  Must call Init() before using the returned search client.
-func NewSearchClient() *SearchClient {
-	return &SearchClient{
-		client: nil,
-		height: 0,
-	}
-}
-
-// Call this once after creating a new SearchClient, and before indexing and searching.
-// Applications must supply a unique name so that we can map it to a unique redis database number.
-// The address should contain ip and port.  e.g. "localhost:6379".
+// Factory method.
+// The address should contain ip and port with no "http://", e.g. "localhost:6379".
 // Pass in a version number for your client.  Start it at zero.  If you later increment it,
-// the client will wipe the current database associated with the given name.
-func (search *SearchClient) Init(name string, address string, version int) (err error) {
-	if len(name) == 0 {
-		err = errors.New("SearchClient name must be non-empty")
-		return err
-	}
-
+// the client will wipe the database and require reindexing.
+func NewSearchClient(address string, version int) (search *SearchClient, err error) {
 	if version < 0 {
 		err = errors.New("SearchClient version must be non-negative")
-		return err
+		return nil, err
 	}
 
-	// Create the system client.
-	search.client = redis.NewClient(&redis.Options{
+	client := redis.NewClient(&redis.Options{
 		Addr: address,
-		DB:   0, // We start with the zero'th db to grab search system variables.
 	})
 
-	// Test connection to the search system client.
+	search = &SearchClient{
+		client: client,
+		height: 0,
+	}
+
 	err = search.testConnection(address)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// With the system client active, get the redis database index.
-	var dbIndex int64
-	dbIndex, err = search.getDatabaseIndex(name)
-	if err != nil {
-		return err
-	}
-
-	// No longer need the system client.
-	search.client.Close()
-
-	// Now that we know the database index we can create and select the main client.
-	// TODO: Would be nice to use `SELECT dbIndex` instead, not close/create another client.
-	search.client = redis.NewClient(&redis.Options{
-		Addr: address,
-		DB:   int(dbIndex),
-	})
-
-	// Test connection to the main client.
-	err = search.testConnection(address)
-	if err != nil {
-		return err
-	}
-
-	// Flush the database if the caller has incremented the version since the last time.
 	err = search.processSearchVersion(version)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return search, nil
 }
 
 // Helper function for creating consistent error messages from Search methods.
@@ -107,52 +70,8 @@ func (search *SearchClient) testConnection(address string) error {
 	return nil
 }
 
-// Helper function for getting the redis database number from the system search client.
-// Will assign and return an available database number if there isn't one associated with name.
-// The system search client must be selected (set into search.client) before calling.
-func (search *SearchClient) getDatabaseIndex(name string) (dbIndex int64, err error) {
-	// Grab the database numbers map from the search system database.
-	var databases map[string]string
-	databases, err = search.HGetAll(databasesKey)
-	if err != nil {
-		return -1, err
-	}
-
-	// See if we have the given name in the map already.
-	if dbString, ok := databases[name]; ok {
-		// Use the database number from the map.
-		dbIndex, err = strconv.ParseInt(dbString, 10, 32)
-		if err != nil {
-			return -1, err
-		}
-	} else {
-		// Find the next available database number for us to use.
-		dbIndex = 0
-		for _, indexString := range databases {
-			var index int64
-			index, err = strconv.ParseInt(indexString, 10, 32)
-			if err != nil {
-				return -1, err
-			}
-			if index > dbIndex {
-				dbIndex = index
-			}
-		}
-		dbIndex++
-
-		// Save it in the map for next time.
-		_, err = search.HSet(databasesKey, name, dbIndex)
-		if err != nil {
-			return -1, err
-		}
-	}
-
-	return dbIndex, nil
-}
-
-// Helper function for flushing the database if the version number has been incremented since the
-// last time we used this client.  Also grabs the height we've indexed up to.
-// The main search client must be selected (set into search.client) before calling.
+// Helper function for flushing the database if the version number has been incremented since
+// the last time we used this client.  Also grabs the height we had indexed up to before.
 func (search *SearchClient) processSearchVersion(version int) (err error) {
 	// Use -1 by default to trigger setting a new version as a search system variable.
 	existingVersion := int64(-1)
@@ -189,7 +108,7 @@ func (search *SearchClient) processSearchVersion(version int) (err error) {
 		}
 	} else {
 		// The version was incremented from what we have stored in the database.
-		// Wipe the database at the currently selected db index.
+		// Wipe the database.
 		_, err = search.FlushDB()
 		if err != nil {
 			return err
