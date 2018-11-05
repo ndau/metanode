@@ -66,11 +66,15 @@ func (app *App) Query(request abci.RequestQuery) (response abci.ResponseQuery) {
 	app.logRequest("Query", logger)
 	response.Height = int64(app.Height())
 
+	querykeys := []string{}
+	for k := range queryHandlers {
+		querykeys = append(querykeys, k)
+	}
 	handle, hasHandler := queryHandlers[request.GetPath()]
 	if !hasHandler {
 		response.Code = uint32(code.QueryError)
 		response.Log = "Unknown query path"
-		logger.Error("unknown query path")
+		logger.WithField("supportedhandlers", querykeys).Error("unknown query path xxx")
 		return
 	}
 	app.checkChild()
