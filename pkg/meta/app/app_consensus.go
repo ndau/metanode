@@ -89,6 +89,8 @@ func (app *App) DeliverTx(bytes []byte) (response abci.ResponseDeliverTx) {
 			err = search.OnDeliverTx(tx)
 			if err != nil {
 				logger.WithError(err).Error("Failed to deliver tx for search")
+				response.Code = uint32(code.IndexingError)
+				response.Log = err.Error()
 			}
 		}
 	} else {

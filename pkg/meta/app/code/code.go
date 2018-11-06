@@ -13,4 +13,5 @@ const (
 	ErrorApplyingTransaction
 	EncodingError
 	QueryError
+	IndexingError
 )
