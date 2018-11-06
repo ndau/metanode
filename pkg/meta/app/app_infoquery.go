@@ -74,7 +74,7 @@ func (app *App) Query(request abci.RequestQuery) (response abci.ResponseQuery) {
 	if !hasHandler {
 		response.Code = uint32(code.QueryError)
 		response.Log = "Unknown query path"
-		logger.WithField("supportedhandlers", querykeys).Error("unknown query path xxx")
+		logger.WithField("supportedhandlers", querykeys).WithField("requestedPath", request.GetPath()).Error("unknown query path")
 		return
 	}
 	app.checkChild()
