@@ -55,16 +55,12 @@ func errorMessage(method string, message string) string {
 
 // Test connection to the redis service.
 func (search *SearchClient) testConnection(address string) error {
-	pong, err := search.Ping()
+	err := search.Ping()
 	if err != nil {
 		msg := errorMessage(
 			"testConnection",
 			fmt.Sprintf("Ping failed, is redis running at %s?", address))
 		return errors.Wrap(err, msg)
-	}
-
-	if pong != "PONG" {
-		return errors.New(errorMessage("testConnection", "Invalid pong"))
 	}
 
 	return nil
@@ -109,20 +105,20 @@ func (search *SearchClient) processSearchVersion(version int) (err error) {
 	} else {
 		// The version was incremented from what we have stored in the database.
 		// Wipe the database.
-		_, err = search.FlushDB()
+		err = search.FlushDB()
 		if err != nil {
 			return err
 		}
 
 		// Set the height for completeness.
 		// We leave the default of search.height = 0 in this case.
-		_, err = search.Set(heightKey, 0)
+		err = search.Set(heightKey, 0)
 		if err != nil {
 			return err
 		}
 
 		// Store the new version.
-		_, err = search.Set(versionKey, version)
+		err = search.Set(versionKey, version)
 		if err != nil {
 			return err
 		}
@@ -157,7 +153,7 @@ func (search *SearchClient) SetHeight(height uint64) (err error) {
 
 	if height > search.height {
 		search.height = height
-		_, err = search.Set(heightKey, height)
+		err = search.Set(heightKey, height)
 		if err != nil {
 			return err
 		}
@@ -171,50 +167,68 @@ func (search *SearchClient) GetHeight() uint64 {
 	return search.height
 }
 
-// Wrapper for redis PING.  Returns "PONG" on success.
-func (search *SearchClient) Ping() (result string, err error) {
-	err = search.testValidity("Ping")
+// Wrapper for redis PING.
+func (search *SearchClient) Ping() error {
+	err := search.testValidity("Ping")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	result, err = search.client.Ping().Result()
+	result, err := search.client.Ping().Result()
+	if err != nil {
+		return err
+	}
+	if result != "PONG" {
+		return errors.New(errorMessage("Ping", fmt.Sprintf("expected 'PONG', got '%s'", result)))
+	}
 
-	return result, err
+	return nil
 }
 
-// Wrapper for redis FLUSHDB.  Returns "OK" on success.
-func (search *SearchClient) FlushDB() (result string, err error) {
-	err = search.testValidity("FlushDB")
+// Wrapper for redis FLUSHDB.
+func (search *SearchClient) FlushDB() error {
+	err := search.testValidity("FlushDB")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	result, err = search.client.FlushDB().Result()
+	result, err := search.client.FlushDB().Result()
+	if err != nil {
+		return err
+	}
+	if result != "OK" {
+		return errors.New(errorMessage("FlushDB", fmt.Sprintf("expected 'OK', got '%s'", result)))
+	}
 
-	return result, err
+	return nil
 }
 
-// Wrapper for redis SET with no expiration.  Returns "OK" on success.
-func (search *SearchClient) Set(key string, value interface{}) (result string, err error) {
-	err = search.testValidity("Set")
+// Wrapper for redis SET with no expiration.
+func (search *SearchClient) Set(key string, value interface{}) error {
+	err := search.testValidity("Set")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	result, err = search.client.Set(key, value, 0).Result()
+	result, err := search.client.Set(key, value, 0).Result()
+	if err != nil {
+		return err
+	}
+	if result != "OK" {
+		return errors.New(errorMessage("Set", fmt.Sprintf("expected 'OK', got '%s'", result)))
+	}
 
-	return result, err
+	return nil
 }
 
 // Wrapper for redis GET.  Returns empty string (not nil) if the key doesn't exist.
-func (search *SearchClient) Get(key string) (result string, err error) {
-	err = search.testValidity("Get")
+func (search *SearchClient) Get(key string) (string, error) {
+	err := search.testValidity("Get")
 	if err != nil {
 		return "", err
 	}
 
-	result, err = search.client.Get(key).Result()
+	result, err := search.client.Get(key).Result()
 	if err == redis.Nil {
 		return "", nil
 	}
@@ -223,46 +237,40 @@ func (search *SearchClient) Get(key string) (result string, err error) {
 }
 
 // Wrapper for redis HSET.  Returns true for new fields, false if the field already exists.
-func (search *SearchClient) HSet(key, field string, value interface{}) (result bool, err error) {
-	err = search.testValidity("HSet")
+func (search *SearchClient) HSet(key, field string, value interface{}) (bool, error) {
+	err := search.testValidity("HSet")
 	if err != nil {
 		return false, err
 	}
 
-	result, err = search.client.HSet(key, field, value).Result()
-
-	return result, err
+	return search.client.HSet(key, field, value).Result()
 }
 
 // Wrapper for redis HGET.
-func (search *SearchClient) HGet(key, field string) (result string, err error) {
-	err = search.testValidity("HGet")
+func (search *SearchClient) HGet(key, field string) (string, error) {
+	err := search.testValidity("HGet")
 	if err != nil {
 		return "", err
 	}
 
-	result, err = search.client.HGet(key, field).Result()
-
-	return result, err
+	return search.client.HGet(key, field).Result()
 }
 
 // Wrapper for redis HGETALL.
-func (search *SearchClient) HGetAll(key string) (result map[string]string, err error) {
-	err = search.testValidity("HGetAll")
+func (search *SearchClient) HGetAll(key string) (map[string]string, error) {
+	err := search.testValidity("HGetAll")
 	if err != nil {
 		return nil, err
 	}
 
-	result, err = search.client.HGetAll(key).Result()
-
-	return result, err
+	return search.client.HGetAll(key).Result()
 }
 
 // Wrapper for redis ZADD.  Returns the number of elements added.
 func (search *SearchClient) ZAdd(
 	key string, score float64, value string,
-) (count int64, err error) {
-	err = search.testValidity("ZAdd")
+) (int64, error) {
+	err := search.testValidity("ZAdd")
 	if err != nil {
 		return 0, err
 	}
@@ -271,21 +279,15 @@ func (search *SearchClient) ZAdd(
 		Score:  score,
 		Member: value,
 	}
-
-	count, err = search.client.ZAdd(key, member).Result()
-	if err != nil {
-		return count, err
-	}
-
-	return count, nil
+	return search.client.ZAdd(key, member).Result()
 }
 
 // Wrapper for redis full-iteration ZSCAN with wildcard match.
 func (search *SearchClient) ZScan(
 	key string,
 	cb func(value string, score float64) error,
-) (err error) {
-	err = search.testValidity("ZScan")
+) (error) {
+	err := search.testValidity("ZScan")
 	if err != nil {
 		return err
 	}
