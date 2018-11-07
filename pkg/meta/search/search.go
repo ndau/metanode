@@ -286,7 +286,7 @@ func (search *SearchClient) ZAdd(
 func (search *SearchClient) ZScan(
 	key string,
 	cb func(value string, score float64) error,
-) (error) {
+) error {
 	err := search.testValidity("ZScan")
 	if err != nil {
 		return err
