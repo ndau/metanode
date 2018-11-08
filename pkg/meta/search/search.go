@@ -11,6 +11,9 @@ import (
 var versionKey = "version" // Per-database key storing the database format version.
 var heightKey = "height"   // Per-database key storing the height that we've indexed up to.
 
+// Redis documents that 10 is the default count for all scan commands.
+var scanCount = int64(10)
+
 type SearchClient struct {
 	client *redis.Client // Underlying redis database client.
 	height uint64        // The blockchain height that we've indexed up to.
@@ -266,6 +269,52 @@ func (search *SearchClient) HGetAll(key string) (map[string]string, error) {
 	return search.client.HGetAll(key).Result()
 }
 
+// Wrapper for redis SADD.  Returns the number of elements added.
+func (search *SearchClient) SAdd(
+	key string, value string,
+) (int64, error) {
+	err := search.testValidity("SAdd")
+	if err != nil {
+		return 0, err
+	}
+
+	return search.client.SAdd(key, value).Result()
+}
+
+// Wrapper for redis full-iteration SSCAN with wildcard match.
+func (search *SearchClient) SScan(
+	key string,
+	cb func(value string) error,
+) error {
+	err := search.testValidity("SScan")
+	if err != nil {
+		return err
+	}
+
+	cursor := uint64(0)
+	for {
+		var results []string
+
+		results, cursor, err = search.client.SScan(key, cursor, "", scanCount).Result()
+		if err != nil {
+			return err
+		}
+
+		for _, value := range results {
+			err = cb(value)
+			if err != nil {
+				return err
+			}
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
+
+	return nil
+}
+
 // Wrapper for redis ZADD.  Returns the number of elements added.
 func (search *SearchClient) ZAdd(
 	key string, score float64, value string,
@@ -296,8 +345,7 @@ func (search *SearchClient) ZScan(
 	for {
 		var results []string
 
-		// Redis documents that 10 is the default count for all scan commands.
-		results, cursor, err = search.client.ZScan(key, cursor, "", 10).Result()
+		results, cursor, err = search.client.ZScan(key, cursor, "", scanCount).Result()
 		if err != nil {
 			return err
 		}
