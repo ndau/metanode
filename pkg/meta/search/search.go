@@ -14,27 +14,28 @@ var heightKey = "height"   // Per-database key storing the height that we've ind
 // Redis documents that 10 is the default count for all scan commands.
 var scanCount = int64(10)
 
-type SearchClient struct {
-	client *redis.Client // Underlying redis database client.
+// Client manages a redis.Client for use with indexing and searching within a node.
+type Client struct {
+	redis  *redis.Client // Underlying redis database client.
 	height uint64        // The blockchain height that we've indexed up to.
 }
 
-// Factory method.
+// NewClient is a factory method for Client.
 // The address should contain ip and port with no "http://", e.g. "localhost:6379".
 // Pass in a version number for your client.  Start it at zero.  If you later increment it,
 // the client will wipe the database and require reindexing.
-func NewSearchClient(address string, version int) (search *SearchClient, err error) {
+func NewClient(address string, version int) (search *Client, err error) {
 	if version < 0 {
-		err = errors.New("SearchClient version must be non-negative")
+		err = errors.New("Client version must be non-negative")
 		return nil, err
 	}
 
-	client := redis.NewClient(&redis.Options{
+	redis := redis.NewClient(&redis.Options{
 		Addr: address,
 	})
 
-	search = &SearchClient{
-		client: client,
+	search = &Client{
+		redis:  redis,
 		height: 0,
 	}
 
@@ -53,11 +54,11 @@ func NewSearchClient(address string, version int) (search *SearchClient, err err
 
 // Helper function for creating consistent error messages from Search methods.
 func errorMessage(method string, message string) string {
-	return "SearchClient." + method + ": " + message
+	return "Client." + method + ": " + message
 }
 
 // Test connection to the redis service.
-func (search *SearchClient) testConnection(address string) error {
+func (search *Client) testConnection(address string) error {
 	err := search.Ping()
 	if err != nil {
 		msg := errorMessage(
@@ -71,7 +72,7 @@ func (search *SearchClient) testConnection(address string) error {
 
 // Helper function for flushing the database if the version number has been incremented since
 // the last time we used this client.  Also grabs the height we had indexed up to before.
-func (search *SearchClient) processSearchVersion(version int) (err error) {
+func (search *Client) processSearchVersion(version int) (err error) {
 	// Use -1 by default to trigger setting a new version as a search system variable.
 	existingVersion := int64(-1)
 
@@ -131,24 +132,25 @@ func (search *SearchClient) processSearchVersion(version int) (err error) {
 }
 
 // Test whether the search client is ready to have redis commands run on it.
-func (search *SearchClient) testValidity(method string) error {
+func (search *Client) testValidity(method string) error {
 	if search == nil {
 		err := errors.New(errorMessage(method, "search cannot be nil"))
 		return err
 	}
 
-	if search.client == nil {
-		err := errors.New(errorMessage(method, "search.client cannot be nil"))
+	if search.redis == nil {
+		err := errors.New(errorMessage(method, "search.redis cannot be nil"))
 		return err
 	}
 
 	return nil
 }
 
+// SetHeight saves the given height in the database as a high water mark.
 // Call this any time you index something at a given blockchain height.
 // It's also acceptable to call this once after an initial scan.
 // It will make the next scan-on-launch only index blocks down to this height.
-func (search *SearchClient) SetHeight(height uint64) (err error) {
+func (search *Client) SetHeight(height uint64) (err error) {
 	err = search.testValidity("SetHeight")
 	if err != nil {
 		return err
@@ -165,19 +167,19 @@ func (search *SearchClient) SetHeight(height uint64) (err error) {
 	return nil
 }
 
-// Get the high water mark (height) we've indexed to so far.
-func (search *SearchClient) GetHeight() uint64 {
+// GetHeight gets the high water mark (height) we've indexed to so far.
+func (search *Client) GetHeight() uint64 {
 	return search.height
 }
 
-// Wrapper for redis PING.
-func (search *SearchClient) Ping() error {
+// Ping is a wrapper for redis PING.
+func (search *Client) Ping() error {
 	err := search.testValidity("Ping")
 	if err != nil {
 		return err
 	}
 
-	result, err := search.client.Ping().Result()
+	result, err := search.redis.Ping().Result()
 	if err != nil {
 		return err
 	}
@@ -188,14 +190,14 @@ func (search *SearchClient) Ping() error {
 	return nil
 }
 
-// Wrapper for redis FLUSHDB.
-func (search *SearchClient) FlushDB() error {
+// FlushDB is a wrapper for redis FLUSHDB.
+func (search *Client) FlushDB() error {
 	err := search.testValidity("FlushDB")
 	if err != nil {
 		return err
 	}
 
-	result, err := search.client.FlushDB().Result()
+	result, err := search.redis.FlushDB().Result()
 	if err != nil {
 		return err
 	}
@@ -206,14 +208,14 @@ func (search *SearchClient) FlushDB() error {
 	return nil
 }
 
-// Wrapper for redis SET with no expiration.
-func (search *SearchClient) Set(key string, value interface{}) error {
+// Set is a wrapper for redis SET with no expiration.
+func (search *Client) Set(key string, value interface{}) error {
 	err := search.testValidity("Set")
 	if err != nil {
 		return err
 	}
 
-	result, err := search.client.Set(key, value, 0).Result()
+	result, err := search.redis.Set(key, value, 0).Result()
 	if err != nil {
 		return err
 	}
@@ -224,14 +226,14 @@ func (search *SearchClient) Set(key string, value interface{}) error {
 	return nil
 }
 
-// Wrapper for redis GET.  Returns empty string (not nil) if the key doesn't exist.
-func (search *SearchClient) Get(key string) (string, error) {
+// Get is a wrapper for redis GET.  Returns empty string (not nil) if the key doesn't exist.
+func (search *Client) Get(key string) (string, error) {
 	err := search.testValidity("Get")
 	if err != nil {
 		return "", err
 	}
 
-	result, err := search.client.Get(key).Result()
+	result, err := search.redis.Get(key).Result()
 	if err == redis.Nil {
 		return "", nil
 	}
@@ -239,38 +241,38 @@ func (search *SearchClient) Get(key string) (string, error) {
 	return result, err
 }
 
-// Wrapper for redis HSET.  Returns true for new fields, false if the field already exists.
-func (search *SearchClient) HSet(key, field string, value interface{}) (bool, error) {
+// HSet is a wrapper for redis HSET.  Returns true for new fields, false if field already exists.
+func (search *Client) HSet(key, field string, value interface{}) (bool, error) {
 	err := search.testValidity("HSet")
 	if err != nil {
 		return false, err
 	}
 
-	return search.client.HSet(key, field, value).Result()
+	return search.redis.HSet(key, field, value).Result()
 }
 
-// Wrapper for redis HGET.
-func (search *SearchClient) HGet(key, field string) (string, error) {
+// HGet is a wrapper for redis HGET.
+func (search *Client) HGet(key, field string) (string, error) {
 	err := search.testValidity("HGet")
 	if err != nil {
 		return "", err
 	}
 
-	return search.client.HGet(key, field).Result()
+	return search.redis.HGet(key, field).Result()
 }
 
-// Wrapper for redis HGETALL.
-func (search *SearchClient) HGetAll(key string) (map[string]string, error) {
+// HGetAll is a wrapper for redis HGETALL.
+func (search *Client) HGetAll(key string) (map[string]string, error) {
 	err := search.testValidity("HGetAll")
 	if err != nil {
 		return nil, err
 	}
 
-	return search.client.HGetAll(key).Result()
+	return search.redis.HGetAll(key).Result()
 }
 
-// Wrapper for redis SADD.  Returns the number of elements added.
-func (search *SearchClient) SAdd(
+// SAdd is a wrapper for redis SADD.  Returns the number of elements added.
+func (search *Client) SAdd(
 	key string, value string,
 ) (int64, error) {
 	err := search.testValidity("SAdd")
@@ -278,11 +280,11 @@ func (search *SearchClient) SAdd(
 		return 0, err
 	}
 
-	return search.client.SAdd(key, value).Result()
+	return search.redis.SAdd(key, value).Result()
 }
 
-// Wrapper for redis full-iteration SSCAN with wildcard match.
-func (search *SearchClient) SScan(
+// SScan is a wrapper for redis full-iteration SSCAN with wildcard match.
+func (search *Client) SScan(
 	key string,
 	cb func(value string) error,
 ) error {
@@ -295,7 +297,7 @@ func (search *SearchClient) SScan(
 	for {
 		var results []string
 
-		results, cursor, err = search.client.SScan(key, cursor, "", scanCount).Result()
+		results, cursor, err = search.redis.SScan(key, cursor, "", scanCount).Result()
 		if err != nil {
 			return err
 		}
@@ -315,8 +317,8 @@ func (search *SearchClient) SScan(
 	return nil
 }
 
-// Wrapper for redis ZADD.  Returns the number of elements added.
-func (search *SearchClient) ZAdd(
+// ZAdd is a wrapper for redis ZADD.  Returns the number of elements added.
+func (search *Client) ZAdd(
 	key string, score float64, value string,
 ) (int64, error) {
 	err := search.testValidity("ZAdd")
@@ -328,11 +330,11 @@ func (search *SearchClient) ZAdd(
 		Score:  score,
 		Member: value,
 	}
-	return search.client.ZAdd(key, member).Result()
+	return search.redis.ZAdd(key, member).Result()
 }
 
-// Wrapper for redis full-iteration ZSCAN with wildcard match.
-func (search *SearchClient) ZScan(
+// ZScan is a wrapper for redis full-iteration ZSCAN with wildcard match.
+func (search *Client) ZScan(
 	key string,
 	cb func(value string, score float64) error,
 ) error {
@@ -345,7 +347,7 @@ func (search *SearchClient) ZScan(
 	for {
 		var results []string
 
-		results, cursor, err = search.client.ZScan(key, cursor, "", scanCount).Result()
+		results, cursor, err = search.redis.ZScan(key, cursor, "", scanCount).Result()
 		if err != nil {
 			return err
 		}

@@ -47,7 +47,7 @@ type App struct {
 	state metast.Metastate
 
 	// Access to blockchain indexing and searching
-	search AppSearchClient
+	search IncrementalIndexer
 
 	// List of pending validator updates
 	ValUpdates []abci.ValidatorUpdate
@@ -213,13 +213,13 @@ func (app *App) GetState() metast.State {
 	return app.state.ChildState
 }
 
-// SetSearch sets the app's search client
-func (app *App) SetSearch(search AppSearchClient) {
+// SetSearch sets the app's incremental indexer
+func (app *App) SetSearch(search IncrementalIndexer) {
 	app.search = search
 }
 
-// GetSearch returns the app's search client
-func (app *App) GetSearch() AppSearchClient {
+// GetSearch returns the app's incremental indexer
+func (app *App) GetSearch() IncrementalIndexer {
 	return app.search
 }
 

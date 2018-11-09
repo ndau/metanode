@@ -11,7 +11,8 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-type AppSearchClient interface {
+// IncrementalIndexer declares methods for incremental indexing.
+type IncrementalIndexer interface {
 	OnBeginBlock(height uint64) error
 	OnDeliverTx(metatx.Transactable) error
 	OnCommit() error
