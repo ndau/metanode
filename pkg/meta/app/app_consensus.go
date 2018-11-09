@@ -13,7 +13,7 @@ import (
 
 // IncrementalIndexer declares methods for incremental indexing.
 type IncrementalIndexer interface {
-	OnBeginBlock(height uint64) error
+	OnBeginBlock(hash string, height uint64) error
 	OnDeliverTx(metatx.Transactable) error
 	OnCommit() error
 }
@@ -46,22 +46,25 @@ func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInit
 
 // BeginBlock tracks the block hash and header information
 func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	hash := fmt.Sprintf("%x", req.GetHash())
+	height := uint64(req.GetHeader().Height)
+
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
-		"tm.height": req.GetHeader().Height,
+		"tm.height": height,
 		"tm.time":   req.GetHeader().Time,
-		"tm.hash":   fmt.Sprintf("%x", req.GetHash()),
+		"tm.hash":   hash,
 	})
 	logger = app.logRequest("BeginBlock", logger)
+
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
-	height := uint64(req.GetHeader().Height)
 	app.SetHeight(height)
 
 	// Tell the search we have a new block on the way.
 	search := app.GetSearch()
 	if search != nil {
-		err := search.OnBeginBlock(height)
+		err := search.OnBeginBlock(hash, height)
 		if err != nil {
 			logger.WithError(err).Error("Failed to begin block for search")
 		}
