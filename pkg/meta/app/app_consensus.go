@@ -14,7 +14,7 @@ import (
 // IncrementalIndexer declares methods for incremental indexing.
 type IncrementalIndexer interface {
 	OnBeginBlock(height uint64, tmHash string) error
-	OnDeliverTx(tx metatx.Transactable, tmHash string) error
+	OnDeliverTx(tx metatx.Transactable) error
 	OnCommit(appHash string) error
 }
 
@@ -89,8 +89,7 @@ func (app *App) DeliverTx(bytes []byte) (response abci.ResponseDeliverTx) {
 		// Update the search with the new transaction.
 		search := app.GetSearch()
 		if search != nil {
-			// TODO: Get tm tx hash.
-			err = search.OnDeliverTx(tx, "")
+			err = search.OnDeliverTx(tx)
 			if err != nil {
 				logger.WithError(err).Error("Failed to deliver tx for search")
 				response.Code = uint32(code.IndexingError)
