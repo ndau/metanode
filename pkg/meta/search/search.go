@@ -8,11 +8,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-var versionKey = "version" // Per-database key storing the database format version.
-var heightKey = "height"   // Per-database key storing the height that we've indexed up to.
+const versionKey = "version" // Per-database key storing the database format version.
+const heightKey = "height"   // Per-database key storing the height that we've indexed up to.
 
 // Redis documents that 10 is the default count for all scan commands.
-var scanCount = int64(10)
+const scanCount = int64(10)
 
 // Client manages a redis.Client for use with indexing and searching within a node.
 type Client struct {

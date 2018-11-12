@@ -60,7 +60,7 @@ func IsStopIteration(err error) bool {
 func IterHistory(
 	db datas.Database, ds datas.Dataset,
 	example State,
-	cb func(state State, height uint64) error,
+	cb func(state State, hash string, height uint64) error,
 ) error {
 	headRef, hasHead := ds.MaybeHeadRef()
 	for hasHead {
@@ -71,7 +71,7 @@ func IterHistory(
 		}
 
 		// call the callback
-		err = cb(metastate.ChildState, uint64(metastate.Height))
+		err = cb(metastate.ChildState, metastate.Blockhash, uint64(metastate.Height))
 		if err != nil {
 			if IsStopIteration(err) {
 				return nil
@@ -121,7 +121,7 @@ func AtHeight(
 		return nil
 	}
 
-	err = IterHistory(db, ds, state, func(hstate State, height uint64) error {
+	err = IterHistory(db, ds, state, func(hstate State, hash string, height uint64) error {
 		// IterHistory iterates backwards down heights, and doesn't iterate
 		// over any heights for which no transactions occurred. Therefore,
 		// the correct state is the _first_ in this backwards iteration for

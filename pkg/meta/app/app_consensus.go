@@ -60,6 +60,7 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
 	app.SetHeight(height)
+	app.SetBlockhash(hash)
 
 	// Tell the search we have a new block on the way.
 	search := app.GetSearch()

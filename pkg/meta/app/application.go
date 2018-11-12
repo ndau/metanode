@@ -175,6 +175,14 @@ func (app *App) SetHeight(h uint64) {
 	app.height = h
 }
 
+// SetBlockhash updates the app's tenermint block hash
+//
+// Useful for holding onto a new block's hash as we index transactions out of it.
+// Once we commit, we index the app's state's copy of this hash and map it to height.
+func (app *App) SetBlockhash(h string) {
+	app.state.Blockhash = h
+}
+
 // SetChild specifies which child app is using this meta.App.
 //
 // It is required to be called exactly once, during program initialization.
