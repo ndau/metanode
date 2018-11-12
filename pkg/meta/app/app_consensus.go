@@ -13,9 +13,9 @@ import (
 
 // IncrementalIndexer declares methods for incremental indexing.
 type IncrementalIndexer interface {
-	OnBeginBlock(hash string, height uint64) error
-	OnDeliverTx(metatx.Transactable) error
-	OnCommit() error
+	OnBeginBlock(height uint64, tmHash string) error
+	OnDeliverTx(tx metatx.Transactable, tmHash string) error
+	OnCommit(appHash string) error
 }
 
 // InitChain performs necessary chain initialization.
@@ -46,26 +46,24 @@ func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInit
 
 // BeginBlock tracks the block hash and header information
 func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	hash := fmt.Sprintf("%x", req.GetHash())
-	height := uint64(req.GetHeader().Height)
+	tmHash := fmt.Sprintf("%x", req.GetHash())
 
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
-		"tm.height": height,
+		"tm.height": req.GetHeader().Height,
 		"tm.time":   req.GetHeader().Time,
-		"tm.hash":   hash,
+		"tm.hash":   tmHash,
 	})
 	logger = app.logRequest("BeginBlock", logger)
-
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
+	height := uint64(req.GetHeader().Height)
 	app.SetHeight(height)
-	app.SetBlockhash(hash)
 
 	// Tell the search we have a new block on the way.
 	search := app.GetSearch()
 	if search != nil {
-		err := search.OnBeginBlock(hash, height)
+		err := search.OnBeginBlock(height, tmHash)
 		if err != nil {
 			logger.WithError(err).Error("Failed to begin block for search")
 		}
@@ -91,7 +89,8 @@ func (app *App) DeliverTx(bytes []byte) (response abci.ResponseDeliverTx) {
 		// Update the search with the new transaction.
 		search := app.GetSearch()
 		if search != nil {
-			err = search.OnDeliverTx(tx)
+			// TODO: Get tm tx hash.
+			err = search.OnDeliverTx(tx, "")
 			if err != nil {
 				logger.WithError(err).Error("Failed to deliver tx for search")
 				response.Code = uint32(code.IndexingError)
@@ -141,7 +140,7 @@ func (app *App) Commit() abci.ResponseCommit {
 		// Index the transactions in the new block.
 		search := app.GetSearch()
 		if search != nil {
-			err = search.OnCommit()
+			err = search.OnCommit(app.HashStr())
 			if err != nil {
 				logger.WithError(err).Error("Failed to commit for search")
 			}

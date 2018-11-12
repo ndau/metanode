@@ -13,11 +13,10 @@ import (
 )
 
 // Metastate wraps the client app state and keeps track of bookkeeping data
-// such as the validator set and height offset with corresponding block hash.
+// such as the validator set and height offset.
 type Metastate struct {
 	Validators nt.Map
 	Height     util.Int
-	Blockhash  string
 	ChildState State
 }
 
@@ -27,7 +26,6 @@ func newMetaState(db datas.Database, child State) Metastate {
 	return Metastate{
 		Validators: nt.NewMap(db),
 		Height:     util.Int(0),
-		Blockhash:  "",
 		ChildState: child,
 	}
 }
@@ -58,12 +56,6 @@ func (state *Metastate) unmarshal(val nt.Value, child State) error {
 	if err != nil {
 		return errors.Wrap(err, "Load failed")
 	}
-	blockhashValue, hasBlockhash := nStruct.MaybeGet("blockhash")
-	if !hasBlockhash {
-		return errors.New("Load failed: noms Struct has no Blockhash")
-	}
-	blockhashString := blockhashValue.(nt.String)
-	state.Blockhash = string(blockhashString)
 	state.ChildState = child
 	childState, hasChildState := nStruct.MaybeGet("childState")
 	if !hasChildState {
@@ -115,13 +107,9 @@ func (state *Metastate) Commit(db datas.Database, ds datas.Dataset) (datas.Datas
 		return ds, errors.Wrap(err, "Commit failed to marshal ChildState")
 	}
 
-	blockhashString := nt.String(state.Blockhash)
-	blockhashValue := blockhashString.Value()
-
 	nStruct := nt.NewStruct(metastateName, nt.StructData{
 		"validators": state.Validators,
 		"height":     heightValue,
-		"blockhash":  blockhashValue,
 		"childState": childValue,
 	})
 
