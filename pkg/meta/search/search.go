@@ -17,7 +17,7 @@ const scanCount = int64(10)
 // Client manages a redis.Client for use with indexing and searching within a node.
 type Client struct {
 	redis  *redis.Client // Underlying redis database client.
-	height uint64        // The blockchain height that we've indexed up to.
+	height uint64        // The blockchain height that we've indexed up to, but not including.
 }
 
 // NewClient is a factory method for Client.
@@ -99,12 +99,13 @@ func (search *Client) processSearchVersion(version int) (err error) {
 			return err
 		}
 
-		// Edge case: leave the default of search.height = 0 if nothing was stored.
+		// Leave the default of search.height = 0 if nothing was stored.
 		if len(heightString) != 0 {
-			search.height, err = strconv.ParseUint(heightString, 10, 64)
+			height, err := strconv.ParseUint(heightString, 10, 64)
 			if err != nil {
 				return err
 			}
+			search.height = height
 		}
 	} else {
 		// The version was incremented from what we have stored in the database.
@@ -146,29 +147,29 @@ func (search *Client) testValidity(method string) error {
 	return nil
 }
 
-// SetHeight saves the given height in the database as a high water mark.
-// Call this any time you index something at a given blockchain height.
+// SetNextHeight saves the given height in the database as a high water mark.
+// Call this after you've indexed something at a given blockchain height.
 // It's also acceptable to call this once after an initial scan.
-// It will make the next scan-on-launch only index blocks down to this height.
-func (search *Client) SetHeight(height uint64) (err error) {
+// It will make the next scan-on-launch index blocks down to, and including, this height.
+func (search *Client) SetNextHeight(height uint64) (err error) {
 	err = search.testValidity("SetHeight")
 	if err != nil {
 		return err
 	}
 
 	if height > search.height {
-		search.height = height
 		err = search.Set(heightKey, height)
 		if err != nil {
 			return err
 		}
+		search.height = height
 	}
 
 	return nil
 }
 
-// GetHeight gets the high water mark (height) we've indexed to so far.
-func (search *Client) GetHeight() uint64 {
+// GetNextHeight gets the high water mark (height) we've indexed up to, but not including it.
+func (search *Client) GetNextHeight() uint64 {
 	return search.height
 }
 
