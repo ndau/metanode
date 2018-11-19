@@ -12,6 +12,10 @@ import (
 )
 
 func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32, log.FieldLogger, error) {
+	if app.childStateValidity != nil {
+		return nil, uint32(code.InvalidNodeState), app.logger.WithError(app.childStateValidity), app.invalidChildStateError()
+	}
+
 	tx, err := metatx.Unmarshal(bytes, app.txIDs)
 	rc := uint32(code.OK)
 	if err != nil {
@@ -32,12 +36,6 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 
 // CheckTx validates a Transaction
 func (app *App) CheckTx(bytes []byte) (response abci.ResponseCheckTx) {
-	if app.childStateValidity != nil {
-		response.Code = uint32(code.InvalidNodeState)
-		response.Log = app.invalidChildStateError().Error()
-		return
-	}
-
 	_, rc, logger, err := app.validateTransactable(bytes)
 	app.logRequest("CheckTx", logger)
 	response.Code = rc
