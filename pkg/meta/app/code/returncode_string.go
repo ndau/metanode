@@ -4,9 +4,9 @@ package code
 
 import "strconv"
 
-const _ReturnCode_name = "OKInvalidTransactionErrorApplyingTransactionEncodingErrorQueryError"
+const _ReturnCode_name = "OKInvalidTransactionErrorApplyingTransactionEncodingErrorQueryErrorIndexingErrorInvalidNodeState"
 
-var _ReturnCode_index = [...]uint8{0, 2, 20, 44, 57, 67}
+var _ReturnCode_index = [...]uint8{0, 2, 20, 44, 57, 67, 80, 96}
 
 func (i ReturnCode) String() string {
 	if i >= ReturnCode(len(_ReturnCode_index)-1) {

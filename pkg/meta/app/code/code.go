@@ -14,4 +14,5 @@ const (
 	EncodingError
 	QueryError
 	IndexingError
+	InvalidNodeState
 )

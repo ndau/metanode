@@ -32,6 +32,12 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 
 // CheckTx validates a Transaction
 func (app *App) CheckTx(bytes []byte) (response abci.ResponseCheckTx) {
+	if app.childStateValidity != nil {
+		response.Code = uint32(code.InvalidNodeState)
+		response.Log = app.invalidChildStateError().Error()
+		return
+	}
+
 	_, rc, logger, err := app.validateTransactable(bytes)
 	app.logRequest("CheckTx", logger)
 	response.Code = rc
