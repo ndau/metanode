@@ -5,6 +5,7 @@ import (
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -57,4 +58,41 @@ func TestAddTxProperlyAffectsState(t *testing.T) {
 
 	require.Equal(t, code.OK, code.ReturnCode(resp.Code))
 	require.Equal(t, uint64(1239), app.GetCount())
+}
+
+func TestInvalidChildStatePreventsTransactions(t *testing.T) {
+	const initial = 1234
+
+	app, err := NewTestApp()
+	require.NoError(t, err)
+	app.UpdateCount(func(c *uint64) error {
+		*c = initial
+		return nil
+	})
+
+	app.SetStateValidity(errors.New("invalid because I said so"))
+
+	tx := &Add{Qty: 5}
+	txBytes, err := metatx.Marshal(tx, TxIDs)
+	require.NoError(t, err)
+
+	t.Run("CheckTx", func(t *testing.T) {
+		resp := app.CheckTx(txBytes)
+		require.Equal(t, code.InvalidNodeState, code.ReturnCode(resp.Code))
+	})
+
+	t.Run("DeliverTx", func(t *testing.T) {
+		app.BeginBlock(abci.RequestBeginBlock{})
+		resp := app.DeliverTx(txBytes)
+		app.EndBlock(abci.RequestEndBlock{})
+		app.Commit()
+
+		require.Equal(t, code.InvalidNodeState, code.ReturnCode(resp.Code))
+		require.Equal(t, uint64(initial), app.GetCount())
+	})
+
+	t.Run("Query", func(t *testing.T) {
+		resp := app.Query(abci.RequestQuery{Path: ValueEndpoint})
+		require.Equal(t, code.InvalidNodeState, code.ReturnCode(resp.Code))
+	})
 }
