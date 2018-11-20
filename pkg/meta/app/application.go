@@ -93,6 +93,20 @@ type App struct {
 	// The solution is to only actually commit a noms block when there
 	// are transactions pending. This variable keeps track of that.
 	transactionsPending uint64
+
+	// sometimes child apps need to signal that their state has become temporarily
+	// invalid without dying entirely. The canonical example of this is when
+	// a ndau node's SVI update times out: that app can't reliably answer
+	// queries or validate or post transactions, but at the same time, it's
+	// expected to come back up shortly.
+	//
+	// The metanode can't know when this happens, or when the child node recovers.
+	// It therefore just stores this value and returns appropriate codes to all
+	// messages until the state comes back up.
+	//
+	// This value is an interface, which defaults to nil. This allows code which
+	// doesn't need this functionality, such as the chaos node, to simply ignore it.
+	childStateValidity error
 }
 
 // NewApp prepares a new App
