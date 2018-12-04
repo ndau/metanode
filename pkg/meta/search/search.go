@@ -52,6 +52,42 @@ func NewClient(address string, version int) (search *Client, err error) {
 	return search, nil
 }
 
+// GetPageOffsets converts page index and size into offsets within a list of length offsetLimit.
+func GetPageOffsets(pageIndex, pageSize, offsetLimit int) (offsetStart, offsetEnd int) {
+	if pageSize <= 0 {
+		// A page size of 0 means "return entire list".
+		offsetStart = 0
+		offsetEnd = offsetLimit
+	} else {
+		offsetStart = pageIndex * pageSize
+		offsetEnd = offsetStart + pageSize
+
+		// Negative start offset means count backwards from the high end of the list.
+		if offsetStart < 0 {
+			offsetStart += offsetLimit
+			offsetEnd += offsetLimit
+
+			// Check if the page is now completely or paritally off the low end of the results.
+			if offsetStart < 0 {
+				offsetStart = 0
+				if offsetEnd < 0 {
+					offsetEnd = 0
+				}
+			}
+		}
+
+		// Check if the page is now completely or paritally off the high end of the results.
+		if offsetEnd > offsetLimit {
+			offsetEnd = offsetLimit
+			if offsetStart > offsetLimit {
+				offsetStart = offsetLimit
+			}
+		}
+	}
+
+	return
+}
+
 // Helper function for creating consistent error messages from Search methods.
 func errorMessage(method string, message string) string {
 	return "Client." + method + ": " + message
