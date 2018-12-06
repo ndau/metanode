@@ -3,6 +3,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -83,7 +85,7 @@ func (app *App) Query(request abci.RequestQuery) (response abci.ResponseQuery) {
 	handle, hasHandler := queryHandlers[request.GetPath()]
 	if !hasHandler {
 		response.Code = uint32(code.QueryError)
-		response.Log = "Unknown query path"
+		response.Log = fmt.Sprintf("unknown query path: %s (expect from %s)", request.GetPath(), querykeys)
 		logger.WithField("supportedhandlers", querykeys).WithField("requestedPath", request.GetPath()).Error("unknown query path")
 		return
 	}
