@@ -131,3 +131,19 @@ func (search *Client) SearchDateRange(first, last string) (uint64, uint64, error
 
 	return firstHeight, lastHeight, nil
 }
+
+// IndexDateToHeight will index all necessary date-to-height keys back in time to the latest one
+// we've indexed, using the given date and height.  Typically this function will only need to do
+// work once every dateRangeInterval seconds.  But if there are long periods of block inactivity,
+// this function will fill in all missing date-to-height keys up to the given block time.
+func (search *Client) IndexDateToHeight(
+	blockTime time.Time, blockHeight uint64,
+) (updateCount int, insertCount int, err error) {
+	updateCount = 0
+	insertCount = 0
+
+	// TODO: Implement.
+	err = nil
+
+	return
+}
