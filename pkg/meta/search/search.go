@@ -1,5 +1,7 @@
 package search
 
+// Base searching and indexing API.
+
 import (
 	"fmt"
 	"strconv"
@@ -413,57 +415,4 @@ func (search *Client) ZScan(
 	}
 
 	return nil
-}
-
-// SearchDateRange returns the first and last block heights for the given ISO-3339 date range.
-func (search *Client) SearchDateRange(first, last string) (uint64, uint64, error) {
-	// ISO-3339 starts with YYYY-MM-DD and those ten characters are what we index.
-	const endchar = 10
-
-	firstKey := first[:endchar]
-	firstValue, err := search.Get(firstKey)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	lastKey := last[:endchar]
-	lastValue, err := search.Get(lastKey)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	var firstHeight uint64
-	if firstValue == "" {
-		// If we didn't index the first time, treat it as if the user is searching from genesis.
-		firstHeight = 0
-	} else {
-		firstHeight, err = strconv.ParseUint(firstValue, 10, 64)
-		if err != nil {
-			return 0, 0, err
-		}
-	}	
-
-	// The search.height stores the next height to index.
-	// If the first height is that or greater, it means empty search results for the date range.
-	if firstHeight >= search.height {
-		return 0, 0, nil
-	}
-
-	var lastHeight uint64
-	if lastValue == "" {
-		// If we didn't index the last time, treat it as if the user is searching to current date.
-		lastHeight = search.height
-	} else {
-		lastHeight, err = strconv.ParseUint(lastValue, 10, 64)
-		if err != nil {
-			return 0, 0, err
-		}
-
-		// Don't let the last height go past the end.
-		if lastHeight > search.height {
-			lastHeight = search.height
-		}
-	}	
-
-	return firstHeight, lastHeight, nil
 }
