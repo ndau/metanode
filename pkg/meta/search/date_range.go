@@ -3,9 +3,9 @@ package search
 // Blockchain-independent implementation for date range indexing and searching.
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -163,10 +163,14 @@ func getPrevAndNextTimes(t time.Time) (prevTime, nextTime time.Time) {
 // Helper function for initilizeing the date range index at height zero.
 // Called by base search client implementation when it detects a fresh/blank index.
 func (search *Client) initializeDateRangeIndex() (err error) {
-	prevTime, nextTime := getPrevAndNextTimes(time.Now())
+	// Current use case is to be called when the index is empty.
+	t := time.Now()
+	height := 0
+
+	prevTime, nextTime := getPrevAndNextTimes(t)
 
 	prevKey := formatDateRangeToHeightSearchKey(prevTime)
-	err = search.Set(prevKey, 0)
+	err = search.Set(prevKey, height)
 	if err != nil {
 		return err
 	}
@@ -196,6 +200,11 @@ func (search *Client) IndexDateToHeight(
 ) (updateCount int, insertCount int, err error) {
 	updateCount = 0
 	insertCount = 0
+
+	// Ignore invalid block times.
+	if blockTime.Year() <= 1 {
+		return updateCount, insertCount, nil
+	}
 
 	// We already have the initial 0-height date snapshots indexed.  This is an edge case.
 	// We need to subtract one from the given block height below, so exit early if we can't.
@@ -238,21 +247,34 @@ func (search *Client) IndexDateToHeight(
 
 	// These next steps ensure that initializeDateRangeIndex() has been called and that the
 	// genesis snapshot hasn't been lost, preventing the chance of an infinite loop below.
+	var specialTime time.Time
 	specialKey, err := search.Get(dateRangeToHeightSearchKeyPrefix)
 	if err != nil {
 		return updateCount, insertCount, err
 	}
-	specialTime, err :=
-		time.Parse(time.RFC3339, specialKey[len(dateRangeToHeightSearchKeyPrefix):])
-	if err != nil {
-		return updateCount, insertCount, err
-	}
-	specialValue, err := search.Get(specialKey)
-	if err != nil {
-		return updateCount, insertCount, err
-	}
-	if specialValue != nextHeightFlag {
-		return updateCount, insertCount, errors.New("Unable to find nextHeightFlag key")
+	if strings.Index(specialKey, dateRangeToHeightSearchKeyPrefix) != 0 {
+		// We could fail here, but since block timestamps are currently not something that can be
+		// initially indexed by some node apps, we haven't incremented the index version when the
+		// date-to-height index was implemented.  So we silently start up the index on the next
+		// blocked that is incrementally indexed.  It just means searches for earlier dates will
+		// return zero results.  We have a ticket to write an external initial indexing app for
+		// each blockchain, and once that exists, we'll bump the index version and this case will
+		// no longer need to be handled.  It'll become a harmless sanity check at that point.
+		specialTime = prevTime
+	} else {
+		specialTimestamp := specialKey[len(dateRangeToHeightSearchKeyPrefix):]
+		specialTime, err = time.Parse(time.RFC3339, specialTimestamp)
+		if err != nil {
+			return updateCount, insertCount, err
+		}
+		specialValue, err := search.Get(specialKey)
+		if err != nil {
+			return updateCount, insertCount, err
+		}
+		if specialValue != nextHeightFlag {
+			return updateCount, insertCount, fmt.Errorf(
+				"Unexpected special value '%s' in key %s", specialValue, specialKey)
+		}
 	}
 	err = search.Set(dateRangeToHeightSearchKeyPrefix, nextKey)
 	if err != nil {
