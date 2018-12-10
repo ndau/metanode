@@ -163,6 +163,13 @@ func (search *Client) processSearchVersion(version int) (err error) {
 			return err
 		}
 
+		// Save off a date-to-height snapshot so that IndexDateToHeight() has a historical limit
+		// before which it never has to index.
+		err = search.initializeDateRangeIndex()
+		if err != nil {
+			return err
+		}
+
 		// Store the new version.
 		err = search.Set(versionKey, version)
 		if err != nil {
