@@ -160,36 +160,6 @@ func getPrevAndNextTimes(t time.Time) (prevTime, nextTime time.Time) {
 	return
 }
 
-// Helper function for initilizeing the date range index at height zero.
-// Called by base search client implementation when it detects a fresh/blank index.
-func (search *Client) initializeDateRangeIndex() (err error) {
-	// Current use case is to be called when the index is empty.
-	t := time.Now()
-	height := 0
-
-	prevTime, nextTime := getPrevAndNextTimes(t)
-
-	prevKey := formatDateRangeToHeightSearchKey(prevTime)
-	err = search.Set(prevKey, height)
-	if err != nil {
-		return err
-	}
-
-	nextKey := formatDateRangeToHeightSearchKey(nextTime)
-	err = search.Set(nextKey, nextHeightFlag)
-	if err != nil {
-		return err
-	}
-
-	// Save off the next-height snapshot key in the special prefix-only key.
-	err = search.Set(dateRangeToHeightSearchKeyPrefix, nextKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // IndexDateToHeight will index all necessary date-to-height keys back in time to the latest one
 // we've indexed, using the given date and height.  Typically this function will only need to do
 // work once every dateRangeInterval seconds.  But if there are long periods of block inactivity,
@@ -206,7 +176,6 @@ func (search *Client) IndexDateToHeight(
 		return updateCount, insertCount, nil
 	}
 
-	// We already have the initial 0-height date snapshots indexed.  This is an edge case.
 	// We need to subtract one from the given block height below, so exit early if we can't.
 	// We'll continue normally when we're called again for block height 1.
 	if blockHeight == 0 {
@@ -245,35 +214,35 @@ func (search *Client) IndexDateToHeight(
 	}
 	insertCount++
 
-	// These next steps ensure that initializeDateRangeIndex() has been called and that the
-	// genesis snapshot hasn't been lost, preventing the chance of an infinite loop below.
-	var specialTime time.Time
-	specialKey, err := search.Get(dateRangeToHeightSearchKeyPrefix)
+	// These next steps ensure that we've initialized the date range index.
+	// The earliest time also prevents any chance of an infinite loop later in this function.
+	var earliestTime time.Time
+	earliestKey, err := search.Get(dateRangeToHeightSearchKeyPrefix)
 	if err != nil {
 		return updateCount, insertCount, err
 	}
-	if strings.Index(specialKey, dateRangeToHeightSearchKeyPrefix) != 0 {
-		// We could fail here, but since block timestamps are currently not something that can be
-		// initially indexed by some node apps, we haven't incremented the index version when the
-		// date-to-height index was implemented.  So we silently start up the index on the next
-		// blocked that is incrementally indexed.  It just means searches for earlier dates will
-		// return zero results.  We have a ticket to write an external initial indexing app for
-		// each blockchain, and once that exists, we'll bump the index version and this case will
-		// no longer need to be handled.  It'll become a harmless sanity check at that point.
-		specialTime = prevTime
+	if strings.Index(earliestKey, dateRangeToHeightSearchKeyPrefix) != 0 {
+		// The earliest key doesn't exist yet.  So the block time is going to be our genesis.
+		// Typically this happens on the first block we index, so it's what we want.  If it's not
+		// the first block, it means we've upgraded the code without starting a fresh blockchain.
+		// In that case, date range queries before this block will return empty results.  Some
+		// blockchains don't index timestamps in their initial indexers, so we didn't bump the
+		// index version to force a wipe and reindex.  We do the best with what we've got here.
+		earliestTime = prevTime
 	} else {
-		specialTimestamp := specialKey[len(dateRangeToHeightSearchKeyPrefix):]
-		specialTime, err = time.Parse(time.RFC3339, specialTimestamp)
+		// Grab the earliest time out of the index.
+		earliestTimestamp := earliestKey[len(dateRangeToHeightSearchKeyPrefix):]
+		earliestTime, err = time.Parse(time.RFC3339, earliestTimestamp)
 		if err != nil {
 			return updateCount, insertCount, err
 		}
-		specialValue, err := search.Get(specialKey)
+		earliestValue, err := search.Get(earliestKey)
 		if err != nil {
 			return updateCount, insertCount, err
 		}
-		if specialValue != nextHeightFlag {
+		if earliestValue != nextHeightFlag {
 			return updateCount, insertCount, fmt.Errorf(
-				"Unexpected special value '%s' in key %s", specialValue, specialKey)
+				"Unexpected earliest value '%s' in key %s", earliestValue, earliestKey)
 		}
 	}
 	err = search.Set(dateRangeToHeightSearchKeyPrefix, nextKey)
@@ -317,7 +286,7 @@ func (search *Client) IndexDateToHeight(
 			break
 		}
 
-		if !prevTime.After(specialTime) {
+		if !prevTime.After(earliestTime) {
 			// Prevent infinite loop in case something went wrong in the index.
 			break
 		}
