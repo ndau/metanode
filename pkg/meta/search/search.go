@@ -1,5 +1,7 @@
 package search
 
+// Base searching and indexing API.
+
 import (
 	"fmt"
 	"strconv"

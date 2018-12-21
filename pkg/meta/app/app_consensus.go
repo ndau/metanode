@@ -4,6 +4,7 @@ package app
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -13,7 +14,7 @@ import (
 
 // IncrementalIndexer declares methods for incremental indexing.
 type IncrementalIndexer interface {
-	OnBeginBlock(height uint64, tmHash string) error
+	OnBeginBlock(height uint64, blockTime time.Time, tmHash string) error
 	OnDeliverTx(tx metatx.Transactable) error
 	OnCommit(app *App) error
 }
@@ -46,24 +47,26 @@ func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInit
 
 // BeginBlock tracks the block hash and header information
 func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	tmHeight := req.GetHeader().Height
+	tmTime := req.GetHeader().Time
 	tmHash := fmt.Sprintf("%x", req.GetHash())
 
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
-		"tm.height": req.GetHeader().Height,
-		"tm.time":   req.GetHeader().Time,
+		"tm.height": tmHeight,
+		"tm.time":   tmTime,
 		"tm.hash":   tmHash,
 	})
 	logger = app.logRequest("BeginBlock", logger)
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
-	height := uint64(req.GetHeader().Height)
+	height := uint64(tmHeight)
 	app.SetHeight(height)
 
 	// Tell the search we have a new block on the way.
 	search := app.GetSearch()
 	if search != nil {
-		err := search.OnBeginBlock(height, tmHash)
+		err := search.OnBeginBlock(height, tmTime, tmHash)
 		if err != nil {
 			logger.WithError(err).Error("Failed to begin block for search")
 		}
