@@ -7,6 +7,8 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/attic-labs/noms/go/d"
 	"github.com/attic-labs/noms/go/datas"
@@ -294,4 +296,33 @@ func (app *App) Height() uint64 {
 // Validators returns a list of the app's validators.
 func (app *App) Validators() ([]abci.Validator, error) {
 	return app.state.GetValidators()
+}
+
+// Support for closing the app with Ctrl+C when running in a shell.
+type sigListener struct {
+	sigchan chan os.Signal
+}
+
+// We pass in the app, not the logger, in case the logger is changed after we start watching.
+func (s *sigListener) watchSignals(app *App) {
+	go func() {
+		if s.sigchan == nil {
+			s.sigchan = make(chan os.Signal, 1)
+		}
+		signal.Notify(s.sigchan, syscall.SIGTERM, syscall.SIGINT)
+		for {
+			sig := <-s.sigchan
+			switch sig {
+			case syscall.SIGTERM, syscall.SIGINT:
+				app.GetLogger().Info(fmt.Sprintf("Exiting after receiving '%v' signal", sig))
+				os.Exit(0)
+			}
+		}
+	}()
+}
+
+// WatchSignals starts a goroutine exits the app gracefully when SIGTERM or SIGINT is received.
+func (app *App) WatchSignals() {
+	sl := &sigListener{}
+	sl.watchSignals(app)
 }
