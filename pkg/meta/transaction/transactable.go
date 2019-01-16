@@ -112,11 +112,11 @@ func unmarshal(txab Transactable, bytes []byte) error {
 	return err
 }
 
-// shallow copy an interface from an example struct
-// https://stackoverflow.com/a/22948379/504550
-func cloneTxab(original Transactable) Transactable {
+// Clone makes a shallow copy of a transactable
+func Clone(original Transactable) Transactable {
+	// https://stackoverflow.com/a/22948379/504550
 	val := reflect.ValueOf(original)
-	if val.Kind() == reflect.Ptr {
+	for val.Kind() == reflect.Ptr {
 		val = reflect.Indirect(val)
 	}
 	return reflect.New(val.Type()).Interface().(Transactable)
@@ -129,7 +129,7 @@ func (tx *Transaction) AsTransactable(idMap TxIDMap) (Transactable, error) {
 		return nil, fmt.Errorf("Unknown TransactableID: %d", tx.TransactableID)
 	}
 
-	newTxab := cloneTxab(instance)
+	newTxab := Clone(instance)
 	err := unmarshal(newTxab, tx.Transactable)
 	return newTxab, err
 }
