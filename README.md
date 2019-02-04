@@ -8,15 +8,5 @@ That's what this repo is about: it's not a full ABCI application, but it contain
 
 In go, libraries don't vendor their dependencies: it's simply not done. Attempting to do so invariably ends in tears.
 
-Unfortunately, this library wants UUIDs, and there is no good UUID library for go right now:
-
-- [`nu7hatch/go-uuid`](https://github.com/nu7hatch/gouuid) doesn't actually generate valid UUIDs
-- [`google/uuid`](https://github.com/google/uuid) specifically warns that its API is currently unstable
-- [`satori/go.uuid`](github.com/satori/go.uuid) has more stars than either on github, but the head of its `master` branch has a breaking API difference from its most recent tagged version. Its maintainer appears unwilling to create a v2 release, so to use this library requires that downstream dependencies specifically declare which tag to use.
-
-We chose `satori/go.uuid` as the most common option, so we need downstream code to specify the required version. In the interest of future-compatibility, we choose the new API instead of the currently tagged API. This therefore requires that downstream dependencies of `metanode` specify that the correct version of the `go.uuid` library be `master`. In `glide.yaml`:
-
-```yaml
-- package: github.com/satori/go.uuid
-  version: master
-```
+We're currently using github.com/gofrs/uuid as the UUID library, which seems to be the one the go community has
+settled on. We use V1 UUIDs but at least v3.2 of the library.
