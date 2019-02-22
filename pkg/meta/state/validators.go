@@ -21,7 +21,7 @@ func (state *Metastate) UpdateValidator(db datas.Database, v abci.ValidatorUpdat
 	if v.Power == 0 {
 		state.Validators = state.Validators.Edit().Remove(pkS).Map()
 	} else {
-		powerBlob := util.Int(v.Power).ToBlob(db)
+		powerBlob := util.Int(v.Power).NomsValue()
 		state.Validators = state.Validators.Edit().Set(pkS, powerBlob).Map()
 	}
 	return nil
@@ -59,20 +59,7 @@ func (state *Metastate) GetValidators() (validators []abci.Validator, err error)
 		address := tcpk.Address()
 
 		// extract power from noms
-		var vblob nt.Blob
-		var ok bool
-		vblob, ok = value.(nt.Blob)
-		if !ok {
-			var vbptr *nt.Blob
-			vbptr, ok = value.(*nt.Blob)
-			if !ok {
-				err = errors.New("GetValidators: power not encoded as blob")
-				return true
-			}
-			vblob = *vbptr
-		}
-		var power util.Int
-		power, err = util.IntFromBlob(vblob)
+		power, err := util.IntFrom(value)
 		if err != nil {
 			err = errors.Wrap(err, "GetValidators: IntFromBlob power")
 			return true
