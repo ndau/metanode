@@ -7,6 +7,17 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+// HistorySize is how much history we keep for node performance analysis
+//
+// We may want this to be a variable stored in metastate in the future,
+// but for now, a const is good enough.
+const HistorySize = 20
+
+// generate noms marshalers
+//go:generate go run $GOPATH/src/github.com/oneiro-ndev/generator/cmd/nomsify $GOPATH/src/github.com/oneiro-ndev/metanode/pkg/meta/state
+//go:generate find $GOPATH/src/github.com/oneiro-ndev/metanode/pkg/meta/state -name "*noms_gen*.go" -maxdepth 1 -exec goimports -w {} ;
+//nomsify NodeRoundStats RoundStats VoteStats
+
 // NodeRoundStats contains information about the votes of a particular node in a particular round
 type NodeRoundStats struct {
 	Power            int64
@@ -87,5 +98,21 @@ func MakeRoundStats(logger *log.Entry, req *abci.RequestBeginBlock) RoundStats {
 	return rs
 }
 
-// VoteStats is a rolling window of the N most recent
-type VoteStats []RoundStats
+// VoteStats is a rolling window of the N most recent rounds of statistics
+//
+// It's a struct mainly due to nomsify limitations, but this also lets us
+// internalize certain functions into methods.
+type VoteStats struct {
+	History []RoundStats
+}
+
+// Append the provided RoundStats to the history
+//
+// Retain no more than HistorySize items.
+func (vs *VoteStats) Append(rs RoundStats) {
+	idx0 := len(vs.History) - HistorySize + 1
+	if idx0 < 0 {
+		idx0 = 0
+	}
+	vs.History = append(vs.History[idx0:], rs)
+}
