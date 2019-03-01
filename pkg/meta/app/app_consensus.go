@@ -3,11 +3,11 @@
 package app
 
 import (
-	"encoding/base64"
 	"fmt"
 	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
+	"github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -60,37 +60,7 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	})
 	logger = app.logRequest("BeginBlock", logger)
 
-	// log some data about who did and did not vote last block
-	var (
-		voted     []string
-		abstained []string
-	)
-	for _, voteInfo := range req.LastCommitInfo.Votes {
-		if voteInfo.SignedLastBlock {
-			voted = append(
-				voted,
-				base64.StdEncoding.EncodeToString(voteInfo.Validator.Address),
-			)
-		} else {
-			abstained = append(
-				abstained,
-				base64.StdEncoding.EncodeToString(voteInfo.Validator.Address),
-			)
-		}
-	}
-	logger.WithFields(log.Fields{
-		"round":                req.LastCommitInfo.Round,
-		"validators.voted":     voted,
-		"validators.abstained": abstained,
-	}).Info("validator vote report")
-	for _, ev := range req.ByzantineValidators {
-		logger.WithFields(log.Fields{
-			"evidence":  ev,
-			"type":      ev.Type,
-			"height":    ev.Height,
-			"validator": base64.StdEncoding.EncodeToString(ev.Validator.Address),
-		}).Warn("evidence of byzantine validation")
-	}
+	state.MakeRoundStats(logger, req)
 
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
