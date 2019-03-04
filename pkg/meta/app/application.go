@@ -176,7 +176,7 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		logger: logger,
 		name:   name,
 		txIDs:  txIDs,
-		height: state.GetHeight(),
+		height: state.Height,
 	}, nil
 }
 
@@ -187,7 +187,7 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 // by the metaapp. This function is public so that test fixtures can be
 // constructed with appropriate application heights.
 func (app *App) SetHeight(h uint64) {
-	app.state.SetHeight(app.db, h)
+	app.state.Height = h
 	app.height = h
 }
 

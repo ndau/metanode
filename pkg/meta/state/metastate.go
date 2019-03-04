@@ -40,6 +40,9 @@ func (state *Metastate) Load(db datas.Database, ds datas.Dataset, child State) (
 	if state == nil {
 		return ds, errors.New("Metastate.Load() on nil pointer")
 	}
+	if child == nil {
+		return ds, errors.New("Metastate.Load(): child state must not be nil")
+	}
 	head, hasHead := ds.MaybeHeadValue()
 	if !hasHead {
 		head, err = marshal.Marshal(db, newMetaState(db, child))
@@ -53,6 +56,10 @@ func (state *Metastate) Load(db datas.Database, ds datas.Dataset, child State) (
 		if err != nil {
 			return ds, errors.Wrap(err, "Load failed to commit new head")
 		}
+	}
+	if state.ChildState == nil {
+		// ensure we can unmarshal the child state without a nil pointer exception
+		state.ChildState = child
 	}
 
 	return ds, state.UnmarshalNoms(head)

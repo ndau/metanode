@@ -31,7 +31,7 @@ type RoundStats struct {
 
 // MakeRoundStats collects data from a RequestBeginBlock and converts it to a RoundStats,
 // logging as it goes.
-func MakeRoundStats(logger *log.Entry, req *abci.RequestBeginBlock) RoundStats {
+func MakeRoundStats(logger log.FieldLogger, req abci.RequestBeginBlock) RoundStats {
 	// note: LastRoundStats never indicates what round it actually was; it just
 	// asserts that it was the last round. I choose to interpret this as the
 	// round whose height is 1 less than the current.
