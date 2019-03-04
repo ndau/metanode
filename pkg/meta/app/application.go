@@ -326,3 +326,10 @@ func (app *App) WatchSignals() {
 	sl := &sigListener{}
 	sl.watchSignals(app)
 }
+
+// GetStats returns node voting statistics.
+//
+// This is typically used to update node goodness / voting power.
+func (app *App) GetStats() metast.VoteStats {
+	return app.state.Stats
+}
