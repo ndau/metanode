@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
-	"github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -60,7 +59,7 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	})
 	logger = app.logRequest("BeginBlock", logger)
 
-	state.MakeRoundStats(logger, req)
+	app.state.AppendRoundStats(logger, req)
 
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)

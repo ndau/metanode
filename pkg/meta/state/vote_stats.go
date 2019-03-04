@@ -114,3 +114,8 @@ func (vs *VoteStats) Append(rs RoundStats) {
 	}
 	vs.History = append(vs.History[idx0:], rs)
 }
+
+// AppendRoundStats appends round statistics of the current round to the metastate
+func (m *Metastate) AppendRoundStats(logger log.FieldLogger, req abci.RequestBeginBlock) {
+	m.Stats.Append(MakeRoundStats(logger, req))
+}
