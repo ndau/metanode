@@ -138,8 +138,8 @@ func AtHeight(
 
 func metastateAt(db datas.Database, ref nt.Ref, example State) (Metastate, error) {
 	metastate := newMetaState(db, example)
-	metastateV := ref.TargetValue(db).(nt.Struct).Get(datas.ValueField).(nt.Struct)
-	err := metastate.unmarshal(metastateV, example)
+	metastateV := ref.TargetValue(db).(nt.Struct).Get(datas.ValueField)
+	err := metastate.UnmarshalNoms(metastateV)
 	return metastate, errors.Wrap(err, "Failed to unmarshal metastate")
 }
 

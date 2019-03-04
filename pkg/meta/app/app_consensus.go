@@ -58,6 +58,9 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 		"tm.hash":   tmHash,
 	})
 	logger = app.logRequest("BeginBlock", logger)
+
+	app.state.AppendRoundStats(logger, req)
+
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
 	height := uint64(tmHeight)
