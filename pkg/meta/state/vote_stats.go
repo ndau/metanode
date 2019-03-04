@@ -41,8 +41,8 @@ func MakeRoundStats(logger log.FieldLogger, req abci.RequestBeginBlock) RoundSta
 	}
 
 	var (
-		voted     map[string]struct{}
-		abstained map[string]struct{}
+		voted     = make(map[string]struct{})
+		abstained = make(map[string]struct{})
 	)
 
 	// fill in the validators
