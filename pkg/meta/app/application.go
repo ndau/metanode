@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/attic-labs/noms/go/d"
 	"github.com/attic-labs/noms/go/datas"
@@ -172,15 +173,21 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		logger = honeycomb.Setup(logger.(*log.Logger))
 	}
 
+	now, err := math.TimestampFrom(time.Now())
+	if err != nil {
+		return nil, errors.Wrap(err, "getting current time as ndau time for initial block time")
+	}
+
 	return &App{
-		db:     db,
-		ds:     ds,
-		state:  state,
-		search: nil,
-		logger: logger,
-		name:   name,
-		txIDs:  txIDs,
-		height: state.Height,
+		db:        db,
+		ds:        ds,
+		state:     state,
+		search:    nil,
+		logger:    logger,
+		name:      name,
+		txIDs:     txIDs,
+		height:    state.Height,
+		blockTime: now,
 	}, nil
 }
 
