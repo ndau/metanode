@@ -3,6 +3,7 @@
 package app
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
@@ -62,7 +63,7 @@ func (app *App) Query(request abci.RequestQuery) (response abci.ResponseQuery) {
 	logger = app.GetLogger().WithFields(log.Fields{
 		"app.height":   app.Height(),
 		"query.path":   request.GetPath(),
-		"query.data":   request.GetData(),
+		"query.data":   base64.StdEncoding.EncodeToString(request.GetData()),
 		"query.height": request.GetHeight(),
 	})
 	app.logRequest("Query", logger)
