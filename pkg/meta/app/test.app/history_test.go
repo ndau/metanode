@@ -8,6 +8,7 @@ package testapp
 
 import (
 	"testing"
+	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -26,6 +27,7 @@ func (bf *blockFactory) make(txab ...metatx.Transactable) {
 	bf.app.BeginBlock(abci.RequestBeginBlock{
 		Header: abci.Header{
 			Height: bf.height,
+			Time:   time.Now(),
 		},
 	})
 

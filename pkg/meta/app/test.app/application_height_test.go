@@ -3,6 +3,7 @@ package testapp
 import (
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -13,6 +14,7 @@ import (
 func issueBlock(t *testing.T, app *TestApp, height uint64, txs ...metatx.Transactable) {
 	app.BeginBlock(abci.RequestBeginBlock{Header: abci.Header{
 		Height: int64(height),
+		Time:   time.Now(),
 	}})
 	for _, tx := range txs {
 		bytes, err := metatx.Marshal(tx, TxIDs)
