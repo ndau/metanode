@@ -8,6 +8,7 @@ import (
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -50,6 +51,23 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	tmHeight := req.GetHeader().Height
 	tmTime := req.GetHeader().Time
 	tmHash := fmt.Sprintf("%x", req.GetHash())
+
+	var err error
+	app.blockTime, err = math.TimestampFrom(tmTime)
+	if err != nil {
+		app.DecoratedLogger().WithFields(log.Fields{
+			"tm.height": tmHeight,
+			"tm.time":   tmTime,
+			"tm.hash":   tmHash,
+		}).WithError(err).Error(
+			"failed to create ndau timestamp from block time",
+		)
+		// we panic because without a good block time, we can't recover
+		// The only error conditions for this function are when the timestamp
+		// is before the epoch, and overflowing our time type. Neither case
+		// is likely on a running blockchain.
+		panic(err)
+	}
 
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
