@@ -58,6 +58,7 @@ func NewClient(address string, version int) (search *Client, err error) {
 // The values returned are the start and end indexes into the original list for the page.
 // The start index is inclusive, the end index is exclusive.
 // So an empty page will have start == end.
+// Pass in 0,0 for the paging params to get the entire length.
 func GetPageOffsets(pageIndex, pageSize, length int) (start, end int) {
 	if pageSize <= 0 {
 		// A page size of 0 means "return entire list".
