@@ -2,6 +2,7 @@ package testapp
 
 import (
 	"testing"
+	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -51,7 +52,7 @@ func TestAddTxProperlyAffectsState(t *testing.T) {
 	txBytes, err := metatx.Marshal(tx, TxIDs)
 	require.NoError(t, err)
 
-	app.BeginBlock(abci.RequestBeginBlock{})
+	app.BeginBlock(abci.RequestBeginBlock{Header: abci.Header{Time: time.Now()}})
 	resp := app.DeliverTx(txBytes)
 	app.EndBlock(abci.RequestEndBlock{})
 	app.Commit()
@@ -82,7 +83,7 @@ func TestInvalidChildStatePreventsTransactions(t *testing.T) {
 	})
 
 	t.Run("DeliverTx", func(t *testing.T) {
-		app.BeginBlock(abci.RequestBeginBlock{})
+		app.BeginBlock(abci.RequestBeginBlock{Header: abci.Header{Time: time.Now()}})
 		resp := app.DeliverTx(txBytes)
 		app.EndBlock(abci.RequestEndBlock{})
 		app.Commit()

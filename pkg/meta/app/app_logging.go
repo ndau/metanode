@@ -30,8 +30,9 @@ func (app *App) SetLogger(logger log.FieldLogger) {
 // DecoratedLogger returns a logger decorated with standard app data
 func (app *App) DecoratedLogger() *log.Entry {
 	return app.logger.WithFields(log.Fields{
-		"height": app.Height(),
-		"hash":   app.HashStr(),
+		"height":        app.Height(),
+		"hash":          app.HashStr(),
+		"app.blockTime": app.blockTime.String(),
 	})
 }
 

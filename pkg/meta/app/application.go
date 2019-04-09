@@ -9,12 +9,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/attic-labs/noms/go/d"
 	"github.com/attic-labs/noms/go/datas"
 	"github.com/attic-labs/noms/go/spec"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 	"github.com/oneiro-ndev/o11y/pkg/honeycomb"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -109,6 +111,9 @@ type App struct {
 	// This value is an interface, which defaults to nil. This allows code which
 	// doesn't need this functionality, such as the chaos node, to simply ignore it.
 	childStateValidity error
+
+	// official chain time of the current block
+	blockTime math.Timestamp
 }
 
 // NewApp prepares a new App
@@ -168,15 +173,21 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		logger = honeycomb.Setup(logger.(*log.Logger))
 	}
 
+	now, err := math.TimestampFrom(time.Now())
+	if err != nil {
+		return nil, errors.Wrap(err, "getting current time as ndau time for initial block time")
+	}
+
 	return &App{
-		db:     db,
-		ds:     ds,
-		state:  state,
-		search: nil,
-		logger: logger,
-		name:   name,
-		txIDs:  txIDs,
-		height: state.Height,
+		db:        db,
+		ds:        ds,
+		state:     state,
+		search:    nil,
+		logger:    logger,
+		name:      name,
+		txIDs:     txIDs,
+		height:    state.Height,
+		blockTime: now,
 	}, nil
 }
 
@@ -332,4 +343,15 @@ func (app *App) WatchSignals() {
 // This is typically used to update node goodness / voting power.
 func (app *App) GetStats() metast.VoteStats {
 	return app.state.Stats
+}
+
+// BlockTime returns the timestamp of the current block
+//
+// Note that this can lag fairly significantly behind real time; the only upper
+// bound to the lag is the empty block creation rate. As of early 2019, the
+// empty block creation rate is 5 minutes, so we expect to see BlockTime up to
+// five minutes behind real time. This is due to Tendermint's block model and
+// can't be fixed by our code.
+func (app *App) BlockTime() math.Timestamp {
+	return app.blockTime
 }
