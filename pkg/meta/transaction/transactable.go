@@ -162,7 +162,7 @@ func Marshal(txab Transactable, idMap TxIDMap) ([]byte, error) {
 // in logs through the complete round-trip of actions.
 func Hash(txab Transactable) string {
 	sum := md5.Sum(txab.SignableBytes())
-	return base64.RawStdEncoding.EncodeToString(sum[:])
+	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
 
 // Sign the Transactable with the given private key
