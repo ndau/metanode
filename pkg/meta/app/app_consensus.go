@@ -52,6 +52,8 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	tmTime := req.GetHeader().Time
 	tmHash := fmt.Sprintf("%x", req.GetHash())
 
+	app.blockHeight = uint64(tmHeight)
+
 	var err error
 	app.blockTime, err = math.TimestampFrom(tmTime)
 	if err != nil {
