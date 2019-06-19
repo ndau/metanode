@@ -366,7 +366,7 @@ func (app *App) SetFeatures(features Features) {
 
 // IsFeatureActive returns whether the given feature is currently active.
 // Typically we gate a feature by block height, for playback compatibility.
-func (app *App) IsFeatureActive(feature string) bool {
+func (app *App) IsFeatureActive(feature Feature) bool {
 	// Nil features is the default, which is all features are active all the time.
 	return app.features == nil || app.features.IsActive(feature)
 }
