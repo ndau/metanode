@@ -127,7 +127,7 @@ type App struct {
 // - `childState` is the child state manager. It must be initialized to its zero value.
 // - `txIDs` is the map of transaction ids to example structs
 func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap) (*App, error) {
-	return NewAppWithLogger(dbSpec, name, childState, txIDs, nil, nil)
+	return NewAppWithLogger(dbSpec, name, childState, txIDs, nil)
 }
 
 // NewAppWithLogger prepares a new App
@@ -137,14 +137,7 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 // - `name` is the name of this app
 // - `childState` is the child state manager. It must be initialized to its zero value.
 // - `txIDs` is the map of transaction ids to example structs
-func NewAppWithLogger(
-	dbSpec string,
-	name string,
-	childState metast.State,
-	txIDs metatx.TxIDMap,
-	logger log.FieldLogger,
-	features Features,
-) (*App, error) {
+func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap, logger log.FieldLogger) (*App, error) {
 	if len(dbSpec) == 0 {
 		dbSpec = "mem"
 	}
@@ -188,11 +181,6 @@ func NewAppWithLogger(
 		return nil, errors.Wrap(err, "getting current time as ndau time for initial block time")
 	}
 
-	// Use the zero-height features by default.
-	if features == nil {
-		features = &ZeroHeightFeatures{}
-	}
-
 	return &App{
 		db:        db,
 		ds:        ds,
@@ -203,7 +191,6 @@ func NewAppWithLogger(
 		txIDs:     txIDs,
 		height:    state.Height,
 		blockTime: now,
-		features:  features,
 	}, nil
 }
 
@@ -372,8 +359,14 @@ func (app *App) BlockTime() math.Timestamp {
 	return app.blockTime
 }
 
+// SetFeatures sets the app's current features.
+func (app *App) SetFeatures(features Features) {
+	app.features = features
+}
+
 // IsFeatureActive returns whether the given feature is currently active.
 // Typically we gate a feature by block height, for playback compatibility.
 func (app *App) IsFeatureActive(feature string) bool {
-	return app.features.IsActive(feature)
+	// Nil features is the default, which is all features are active all the time.
+	return app.features == nil || app.features.IsActive(feature)
 }
