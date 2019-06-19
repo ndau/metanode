@@ -115,8 +115,8 @@ type App struct {
 	// official chain time of the current block
 	blockTime math.Timestamp
 
-	// official height of the current block
-	blockHeight uint64
+	// which features are active in the app's current state
+	features Features
 }
 
 // NewApp prepares a new App
@@ -127,7 +127,7 @@ type App struct {
 // - `childState` is the child state manager. It must be initialized to its zero value.
 // - `txIDs` is the map of transaction ids to example structs
 func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap) (*App, error) {
-	return NewAppWithLogger(dbSpec, name, childState, txIDs, nil)
+	return NewAppWithLogger(dbSpec, name, childState, txIDs, nil, nil)
 }
 
 // NewAppWithLogger prepares a new App
@@ -137,7 +137,14 @@ func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.Tx
 // - `name` is the name of this app
 // - `childState` is the child state manager. It must be initialized to its zero value.
 // - `txIDs` is the map of transaction ids to example structs
-func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap, logger log.FieldLogger) (*App, error) {
+func NewAppWithLogger(
+	dbSpec string,
+	name string,
+	childState metast.State,
+	txIDs metatx.TxIDMap,
+	logger log.FieldLogger,
+	features Features,
+) (*App, error) {
 	if len(dbSpec) == 0 {
 		dbSpec = "mem"
 	}
@@ -181,6 +188,11 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		return nil, errors.Wrap(err, "getting current time as ndau time for initial block time")
 	}
 
+	// Use the zero-height features by default.
+	if features == nil {
+		features = &ZeroHeightFeatures{}
+	}
+
 	return &App{
 		db:        db,
 		ds:        ds,
@@ -191,6 +203,7 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		txIDs:     txIDs,
 		height:    state.Height,
 		blockTime: now,
+		features:  features,
 	}, nil
 }
 
@@ -359,7 +372,8 @@ func (app *App) BlockTime() math.Timestamp {
 	return app.blockTime
 }
 
-// BlockHeight returns the height of the current block
-func (app *App) BlockHeight() uint64 {
-	return app.blockHeight
+// IsFeatureActive returns whether the given feature is currently active.
+// Typically we gate a feature by block height, for playback compatibility.
+func (app *App) IsFeatureActive(feature string) bool {
+	return app.features.IsActive(feature)
 }
