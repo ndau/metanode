@@ -114,9 +114,6 @@ type App struct {
 
 	// official chain time of the current block
 	blockTime math.Timestamp
-
-	// which features are active in the app's current state
-	features Features
 }
 
 // NewApp prepares a new App
@@ -357,16 +354,4 @@ func (app *App) GetStats() metast.VoteStats {
 // can't be fixed by our code.
 func (app *App) BlockTime() math.Timestamp {
 	return app.blockTime
-}
-
-// SetFeatures sets the app's current features.
-func (app *App) SetFeatures(features Features) {
-	app.features = features
-}
-
-// IsFeatureActive returns whether the given feature is currently active.
-// Typically we gate a feature by block height, for playback compatibility.
-func (app *App) IsFeatureActive(feature Feature) bool {
-	// Nil features is the default, which is all features are active all the time.
-	return app.features == nil || app.features.IsActive(feature)
 }
