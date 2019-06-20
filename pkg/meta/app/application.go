@@ -114,9 +114,6 @@ type App struct {
 
 	// official chain time of the current block
 	blockTime math.Timestamp
-
-	// official height of the current block
-	blockHeight uint64
 }
 
 // NewApp prepares a new App
@@ -357,9 +354,4 @@ func (app *App) GetStats() metast.VoteStats {
 // can't be fixed by our code.
 func (app *App) BlockTime() math.Timestamp {
 	return app.blockTime
-}
-
-// BlockHeight returns the height of the current block
-func (app *App) BlockHeight() uint64 {
-	return app.blockHeight
 }
