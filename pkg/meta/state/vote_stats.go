@@ -18,9 +18,9 @@ const HistorySize = 20
 
 // NodeRoundStats contains information about the votes of a particular node in a particular round
 type NodeRoundStats struct {
-	Power            int64 `chain:"1000,Stats_Power"`
-	Voted            bool  `chain:"1001,Stats_Voted"`
-	AgainstConsensus bool  `chain:"1002,Stats_AgainstConsensus"`
+	Power            int64 `chain:"120,Stats_Power"`
+	Voted            bool  `chain:"121,Stats_Voted"`
+	AgainstConsensus bool  `chain:"122,Stats_AgainstConsensus"`
 }
 
 // RoundStats contains information about the validator set votes in a particular round
