@@ -254,13 +254,17 @@ func (app *App) GetSearch() IncrementalIndexer {
 //
 // Returning a nil state from the internal function is an error.
 // Returning an error from the internal function returns that error.
-func (app *App) UpdateState(updater func(state metast.State) (metast.State, error)) error {
-	state, err := updater(app.GetState())
-	if err != nil {
-		return err
-	}
-	if state == nil {
-		return errors.New("nil state returned from UpdateState")
+func (app *App) UpdateState(updaters ...func(state metast.State) (metast.State, error)) error {
+	state := app.GetState()
+	for _, updater := range updaters {
+		var err error
+		state, err = updater(state)
+		if err != nil {
+			return err
+		}
+		if state == nil {
+			return errors.New("nil state returned from UpdateState")
+		}
 	}
 	app.state.ChildState = state
 	return nil
@@ -271,8 +275,8 @@ func (app *App) UpdateState(updater func(state metast.State) (metast.State, erro
 // It also increments the height offset.
 //
 // This is useful for inserting mock data etc.
-func (app *App) UpdateStateImmediately(updater func(state metast.State) (metast.State, error)) error {
-	err := app.UpdateState(updater)
+func (app *App) UpdateStateImmediately(updaters ...func(state metast.State) (metast.State, error)) error {
+	err := app.UpdateState(updaters...)
 	if err != nil {
 		return err
 	}
