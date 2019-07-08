@@ -1,10 +1,48 @@
 package app
 
 import (
+	"os"
+
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	"github.com/oneiro-ndev/o11y/pkg/honeycomb"
 	log "github.com/sirupsen/logrus"
 )
+
+// NewLogger creates a new logger with default configuration,
+// some of which can be overridden from environment variables.
+// Callers should set up node_id and bin fields on the returned logger.
+func NewLogger() log.FieldLogger {
+	logger := log.New()
+	logger.Out = os.Stderr
+
+	var formatter log.Formatter
+	switch os.Getenv("LOG_FORMAT") {
+	case "text":
+		formatter = new(log.TextFormatter)
+	default:
+		formatter = new(log.JSONFormatter)
+	}
+	logger.Formatter = formatter
+
+	var level log.Level
+	switch os.Getenv("LOG_LEVEL") {
+	case "debug":
+		level = log.DebugLevel
+	case "warn", "warning":
+		level = log.WarnLevel
+	case "err", "error":
+		level = log.ErrorLevel
+	default:
+		level = log.InfoLevel
+	}
+	logger.Level = level
+
+	if os.Getenv("HONEYCOMB_KEY") != "" {
+		logger = honeycomb.Setup(logger)
+	}
+
+	return logger
+}
 
 // GetLogger returns the application logger
 func (app *App) GetLogger() log.FieldLogger {
