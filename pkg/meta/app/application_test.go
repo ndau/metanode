@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/require"
-
 	nt "github.com/attic-labs/noms/go/types"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 )
 
 type TestState struct {
@@ -53,4 +52,26 @@ func TestUpdateStateOperatesOnACopy(t *testing.T) {
 	require.Error(t, err)
 	s2 := app.GetState().(*TestState)
 	require.Equal(t, 1, s2.Value)
+}
+
+func TestUpdateStateLeakyOperatesOnAReference(t *testing.T) {
+	app, err := NewApp("mem", "test", &TestState{1}, metatx.TxIDMap{})
+	require.NoError(t, err)
+
+	s := app.GetState().(*TestState)
+	err = app.UpdateStateLeaky(func(stI metast.State) (metast.State, error) {
+		// updater must start with an equal value
+		require.Equal(t, s, stI)
+
+		// updater must change original state
+		st := stI.(*TestState)
+		st.Value = 2
+		require.Equal(t, 2, s.Value)
+
+		// returning an error must discard state changes
+		return stI, errors.New("must discard changes now")
+	})
+	require.Error(t, err)
+	s2 := app.GetState().(*TestState)
+	require.Equal(t, 2, s2.Value)
 }

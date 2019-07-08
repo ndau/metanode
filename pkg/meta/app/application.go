@@ -256,31 +256,47 @@ func (app *App) GetSearch() IncrementalIndexer {
 // Returning a nil state from the internal function is an error.
 // Returning an error from the internal function returns that error.
 func (app *App) UpdateState(updaters ...func(state metast.State) (metast.State, error)) error {
+	return app.updateStateInner(false, updaters...)
+}
+
+// UpdateStateLeaky updates the child application state whether or not the
+// internal updaters fail
+//
+// This is buggy behavior and this function should NEVER be called in ordinary
+// usage. However, we've got a running blockchain for which playback depends on
+// replicating past bugs, so we have to be able to choose the old behavior.
+func (app *App) UpdateStateLeaky(updaters ...func(state metast.State) (metast.State, error)) error {
+	return app.updateStateInner(true, updaters...)
+}
+
+func (app *App) updateStateInner(leak bool, updaters ...func(state metast.State) (metast.State, error)) error {
 	state := app.GetState()
 
-	// state is an interface. This means that it is always passed by reference,
-	// not by value. This in turn means that any changes an updater makes to
-	// the state leaks backwards into the child state, even if an error
-	// is returned. This is highly undesirable behavior.
-	//
-	// The normal recommendation in this case is to manually cast the interface
-	// value into its concrete type, so that we can make a copy using normal
-	// semantics. Unfortunately, that's impossible in this case: we can't name
-	// the concrete type, because it depends on the particular app. Even if
-	// we were willing to manually enumerate all blockchains depending on the
-	// metaapp, we couldn't name those types, because it would lead to circular
-	// import paths.
-	//
-	// Therefore, we have to use reflection to force go to make a copy.
+	if !leak {
+		// state is an interface. This means that it is always passed by reference,
+		// not by value. This in turn means that any changes an updater makes to
+		// the state leaks backwards into the child state, even if an error
+		// is returned. This is highly undesirable behavior.
+		//
+		// The normal recommendation in this case is to manually cast the interface
+		// value into its concrete type, so that we can make a copy using normal
+		// semantics. Unfortunately, that's impossible in this case: we can't name
+		// the concrete type, because it depends on the particular app. Even if
+		// we were willing to manually enumerate all blockchains depending on the
+		// metaapp, we couldn't name those types, because it would lead to circular
+		// import paths.
+		//
+		// Therefore, we have to use reflection to force go to make a copy.
 
-	// this indirect captures the concrete type of the state object
-	indirect := reflect.Indirect(reflect.ValueOf(state))
-	// create a new instance of the concrete type
-	indirect2 := reflect.New(indirect.Type())
-	// set the value of the new indirect to the content of the old
-	indirect2.Elem().Set(reflect.ValueOf(indirect.Interface()))
-	// set the state variable to the copy
-	state = indirect2.Interface().(metast.State)
+		// this indirect captures the concrete type of the state object
+		indirect := reflect.Indirect(reflect.ValueOf(state))
+		// create a new instance of the concrete type
+		indirect2 := reflect.New(indirect.Type())
+		// set the value of the new indirect to the content of the old
+		indirect2.Elem().Set(reflect.ValueOf(indirect.Interface()))
+		// set the state variable to the copy
+		state = indirect2.Interface().(metast.State)
+	}
 
 	for _, updater := range updaters {
 		var err error
