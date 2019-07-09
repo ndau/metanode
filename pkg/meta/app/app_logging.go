@@ -17,6 +17,8 @@ func NewLogger() log.FieldLogger {
 
 	var formatter log.Formatter
 	switch os.Getenv("LOG_FORMAT") {
+	case "json", "":
+		formatter = new(log.JSONFormatter)
 	case "text":
 		formatter = new(log.TextFormatter)
 	default:
@@ -26,6 +28,8 @@ func NewLogger() log.FieldLogger {
 
 	var level log.Level
 	switch os.Getenv("LOG_LEVEL") {
+	case "info", "":
+		level = log.InfoLevel
 	case "debug":
 		level = log.DebugLevel
 	case "warn", "warning":
