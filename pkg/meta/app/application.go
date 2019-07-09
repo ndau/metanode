@@ -18,7 +18,6 @@ import (
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
-	"github.com/oneiro-ndev/o11y/pkg/honeycomb"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -168,10 +167,7 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 	}
 
 	if logger == nil {
-		logger = log.New()
-		logger.(*log.Logger).Formatter = new(log.JSONFormatter)
-		logger.(*log.Logger).Out = os.Stderr
-		logger = honeycomb.Setup(logger.(*log.Logger))
+		logger = NewLogger()
 	}
 
 	now, err := math.TimestampFrom(time.Now())
