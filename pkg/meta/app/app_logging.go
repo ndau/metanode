@@ -4,7 +4,6 @@ import (
 	"os"
 
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
-	"github.com/oneiro-ndev/o11y/pkg/honeycomb"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +18,7 @@ func NewLogger() log.FieldLogger {
 	switch os.Getenv("LOG_FORMAT") {
 	case "json", "":
 		formatter = new(log.JSONFormatter)
-	case "text":
+	case "text", "plain":
 		formatter = new(log.TextFormatter)
 	default:
 		formatter = new(log.JSONFormatter)
@@ -41,10 +40,6 @@ func NewLogger() log.FieldLogger {
 	}
 	logger.Level = level
 
-	if os.Getenv("HONEYCOMB_KEY") != "" {
-		logger = honeycomb.Setup(logger)
-	}
-
 	return logger
 }
 
@@ -54,19 +49,8 @@ func (app *App) GetLogger() log.FieldLogger {
 }
 
 // SetLogger sets the logger to be used by this app.
-// It has the side effect of setting up Honeycomb if it's possible to do so.
 func (app *App) SetLogger(logger log.FieldLogger) {
-	switch l := logger.(type) {
-	case *log.Logger:
-		app.logger = honeycomb.Setup(l)
-		app.logger = l
-	case *log.Entry:
-		l.Logger = honeycomb.Setup(l.Logger)
-		app.logger = l
-	default:
-		logger.Warnf("Logger was %T, so can't set up Honeycomb.", logger)
-		app.logger = logger
-	}
+	app.logger = logger
 }
 
 // DecoratedLogger returns a logger decorated with standard app data
