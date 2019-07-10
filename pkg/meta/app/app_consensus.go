@@ -7,17 +7,24 @@ import (
 	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
+	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+// Indexable is an app which can help index its transactions
+type Indexable interface {
+	GetAccountAddresses(tx metatx.Transactable) ([]string, error)
+	GetState() metast.State
+}
+
 // IncrementalIndexer declares methods for incremental indexing.
 type IncrementalIndexer interface {
 	OnBeginBlock(height uint64, blockTime time.Time, tmHash string) error
 	OnDeliverTx(tx metatx.Transactable) error
-	OnCommit(app *App) error
+	OnCommit(app Indexable) error
 }
 
 // InitChain performs necessary chain initialization.

@@ -397,3 +397,14 @@ func (app *App) GetStats() metast.VoteStats {
 func (app *App) BlockTime() math.Timestamp {
 	return app.blockTime
 }
+
+// GetAccountAddresses implements Indexable
+//
+// This is a stub implementation required because the metaapp needs to implement
+// the interface. However, this should really be implemented at the child app level.
+func (app *App) GetAccountAddresses(tx metatx.Transactable) ([]string, error) {
+	if ix, ok := app.childApp.(Indexable); ok {
+		return ix.GetAccountAddresses(tx)
+	}
+	return nil, errors.New("bare metaapp cannot extract addresses from tx; override in child app")
+}
