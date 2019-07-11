@@ -17,11 +17,11 @@ func NewLogger() log.FieldLogger {
 	var formatter log.Formatter
 	switch os.Getenv("LOG_FORMAT") {
 	case "json", "":
-		formatter = new(log.JSONFormatter)
+		formatter = &log.JSONFormatter{}
 	case "text", "plain":
-		formatter = new(log.TextFormatter)
+		formatter = &log.TextFormatter{}
 	default:
-		formatter = new(log.JSONFormatter)
+		formatter = &log.JSONFormatter{}
 	}
 	logger.Formatter = formatter
 
