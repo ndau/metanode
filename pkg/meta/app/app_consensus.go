@@ -17,7 +17,7 @@ import (
 type IncrementalIndexer interface {
 	OnBeginBlock(height uint64, blockTime time.Time, tmHash string) error
 	OnDeliverTx(tx metatx.Transactable) error
-	OnCommit(app *App) error
+	OnCommit() error
 }
 
 // InitChain performs necessary chain initialization.
@@ -166,7 +166,7 @@ func (app *App) Commit() abci.ResponseCommit {
 		// Index the transactions in the new block.
 		search := app.GetSearch()
 		if search != nil {
-			err = search.OnCommit(app)
+			err = search.OnCommit()
 			if err != nil {
 				logger.WithError(err).WithField("intra-ABCI log sequence", "mid").Error("Failed to commit for search")
 			}
