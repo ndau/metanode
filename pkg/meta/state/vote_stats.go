@@ -1,10 +1,9 @@
 package state
 
 import (
-	"encoding/base64"
-
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tc "github.com/tendermint/tendermint/crypto"
 )
 
 // HistorySize is how much history we keep for node performance analysis
@@ -47,7 +46,7 @@ func MakeRoundStats(logger log.FieldLogger, req abci.RequestBeginBlock) RoundSta
 
 	// fill in the validators
 	for _, voteInfo := range req.LastCommitInfo.Votes {
-		addr := base64.StdEncoding.EncodeToString(voteInfo.Validator.Address)
+		addr := tc.Address(voteInfo.Validator.Address).String()
 		if voteInfo.SignedLastBlock {
 			voted[addr] = struct{}{}
 		} else {
@@ -67,7 +66,7 @@ func MakeRoundStats(logger log.FieldLogger, req abci.RequestBeginBlock) RoundSta
 
 	// handle the byzantine evidence, which is in a different struct for some reason
 	for _, ev := range req.ByzantineValidators {
-		addr := base64.StdEncoding.EncodeToString(ev.Validator.Address)
+		addr := tc.Address(ev.Validator.Address).String()
 		logger = logger.WithFields(log.Fields{
 			"evidence":        ev,
 			"evidence.type":   ev.Type,
