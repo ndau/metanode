@@ -1,6 +1,8 @@
 package app
 
 import (
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -11,9 +13,13 @@ func (app *App) UpdateValidator(v abci.ValidatorUpdate) {
 
 	// we only update the changes array after updating the tree
 	app.ValUpdates = append(app.ValUpdates, v)
+	vuss := make([]string, 0, len(app.ValUpdates))
+	for _, vu := range app.ValUpdates {
+		vuss = append(vuss, vu.String())
+	}
 	app.logger.WithFields(log.Fields{
 		"validator.power":  v.GetPower(),
 		"validator.PubKey": v.GetPubKey(),
-		"app.ValUpdates":   app.ValUpdates,
+		"app.ValUpdates":   strings.Join(vuss, ", "),
 	}).Info("UpdateValidator")
 }
