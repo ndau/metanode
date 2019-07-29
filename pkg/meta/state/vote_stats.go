@@ -69,7 +69,7 @@ func MakeRoundStats(logger log.FieldLogger, req abci.RequestBeginBlock) RoundSta
 	for _, ev := range req.ByzantineValidators {
 		addr := base64.StdEncoding.EncodeToString(ev.Validator.Address)
 		logger = logger.WithFields(log.Fields{
-			"evidence":        ev,
+			"evidence":        ev.String(),
 			"evidence.type":   ev.Type,
 			"evidence.height": ev.Height,
 			"validator":       addr,

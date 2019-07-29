@@ -56,15 +56,18 @@ func (app *App) SetLogger(logger log.FieldLogger) {
 // DecoratedLogger returns a logger decorated with standard app data
 func (app *App) DecoratedLogger() *log.Entry {
 	return app.logger.WithFields(log.Fields{
-		"height":        app.Height(),
-		"hash":          app.HashStr(),
+		"app.height":    app.Height(),
+		"app.hash":      app.HashStr(),
 		"app.blockTime": app.blockTime.String(),
 	})
 }
 
 // DecoratedTxLogger returns a logger decorated with the tx hash
 func (app *App) DecoratedTxLogger(tx metatx.Transactable) *log.Entry {
-	return app.DecoratedLogger().WithField("tx hash", metatx.Hash(tx))
+	return app.DecoratedLogger().WithFields(log.Fields{
+		"tx.hash": metatx.Hash(tx),
+		"tx.name": metatx.NameOf(tx),
+	})
 }
 
 // LogState emits a log message detailing the current app state
@@ -81,8 +84,10 @@ func (app *App) logRequestOptHt(method string, showHeight bool, logger log.Field
 	}
 	decoratedLogger := logger.WithField("method", method)
 	if showHeight {
-		decoratedLogger = decoratedLogger.WithField("height", app.Height())
-		decoratedLogger = decoratedLogger.WithField("hash", app.HashStr())
+		decoratedLogger = decoratedLogger.WithFields(log.Fields{
+			"app.height": app.Height(),
+			"app.hash":   app.HashStr(),
+		})
 	}
 	decoratedLogger.Info("received request")
 

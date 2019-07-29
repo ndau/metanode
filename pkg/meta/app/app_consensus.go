@@ -139,8 +139,8 @@ func (app *App) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 func (app *App) Commit() abci.ResponseCommit {
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
-		"qty transactions in block": app.transactionsPending,
-		"intra-ABCI log sequence":   "start",
+		"block.qty_transactions": app.transactionsPending,
+		"abci.sequence":          "start",
 	})
 	app.logRequest("Commit", logger)
 
@@ -148,7 +148,7 @@ func (app *App) Commit() abci.ResponseCommit {
 		app.transactionsPending = 0
 		err := app.commit(logger)
 		if err != nil {
-			logger.WithError(err).WithField("intra-ABCI log sequence", "mid").Error("Failed to commit block")
+			logger.WithError(err).WithField("abci.sequence", "mid").Error("Failed to commit block")
 			// A panic is appropriate here because the one thing we do _not_ want
 			// in the event that a block cannot be committed is for the app to
 			// just keep ticking along as if things were ok. Crashing the
@@ -168,16 +168,16 @@ func (app *App) Commit() abci.ResponseCommit {
 		if search != nil {
 			err = search.OnCommit()
 			if err != nil {
-				logger.WithError(err).WithField("intra-ABCI log sequence", "mid").Error("Failed to commit for search")
+				logger.WithError(err).WithField("abci.sequence", "mid").Error("Failed to commit for search")
 			}
 		}
 
-		logger.WithField("intra-ABCI log sequence", "mid").Info("Committed noms block")
+		logger.WithField("abci.sequence", "mid").Info("Committed noms block")
 	} else {
-		logger.WithField("intra-ABCI log sequence", "mid").Info("Skipped noms commit")
+		logger.WithField("abci.sequence", "mid").Info("Skipped noms commit")
 	}
 
-	logger = app.DecoratedLogger().WithField("intra-ABCI log sequence", "end")
+	logger = app.DecoratedLogger().WithField("abci.sequence", "end")
 	app.logRequest("Commit", logger)
 	return abci.ResponseCommit{Data: app.Hash()}
 }

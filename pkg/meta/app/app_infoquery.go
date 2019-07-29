@@ -5,6 +5,7 @@ package app
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	log "github.com/sirupsen/logrus"
@@ -24,8 +25,8 @@ func (app *App) Info(req abci.RequestInfo) (resInfo abci.ResponseInfo) {
 func (app *App) SetOption(request abci.RequestSetOption) (response abci.ResponseSetOption) {
 	var logger log.FieldLogger
 	logger = app.GetLogger().WithFields(log.Fields{
-		"key":   request.GetKey(),
-		"value": request.GetValue(),
+		"request.key":   request.GetKey(),
+		"request.value": request.GetValue(),
 	})
 	app.logRequest("SetOption", logger)
 	return
@@ -60,8 +61,7 @@ func (app *App) QueryError(err error, response *abci.ResponseQuery, msg string) 
 // Query determines the current value for a given key
 func (app *App) Query(request abci.RequestQuery) (response abci.ResponseQuery) {
 	var logger log.FieldLogger
-	logger = app.GetLogger().WithFields(log.Fields{
-		"app.height":   app.Height(),
+	logger = app.DecoratedLogger().WithFields(log.Fields{
 		"query.path":   request.GetPath(),
 		"query.data":   base64.StdEncoding.EncodeToString(request.GetData()),
 		"query.height": request.GetHeight(),
@@ -87,7 +87,10 @@ func (app *App) Query(request abci.RequestQuery) (response abci.ResponseQuery) {
 	if !hasHandler {
 		response.Code = uint32(code.QueryError)
 		response.Log = fmt.Sprintf("unknown query path: %s (expect from %s)", request.GetPath(), querykeys)
-		logger.WithField("supportedhandlers", querykeys).WithField("requestedPath", request.GetPath()).Error("unknown query path")
+		logger.WithFields(log.Fields{
+			"query.supported_handlers": strings.Join(querykeys, ", "),
+			"query.requested_path":     request.GetPath(),
+		}).Error("unknown query path")
 		return
 	}
 	app.checkChild()
