@@ -53,29 +53,31 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	tmHash := fmt.Sprintf("%x", req.GetHash())
 
 	var err error
-	app.blockTime, err = math.TimestampFrom(tmTime)
-	if err != nil {
-		app.DecoratedLogger().WithFields(log.Fields{
-			"tm.height": tmHeight,
-			"tm.time":   tmTime,
-			"tm.hash":   tmHash,
-		}).WithError(err).Error(
-			"failed to create ndau timestamp from block time",
-		)
-		// we panic because without a good block time, we can't recover
-		// The only error conditions for this function are when the timestamp
-		// is before the epoch, and overflowing our time type. Neither case
-		// is likely on a running blockchain.
-		panic(err)
-	}
-
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
 		"tm.height": tmHeight,
 		"tm.time":   tmTime,
 		"tm.hash":   tmHash,
 	})
-	logger = app.logRequest("BeginBlock", logger)
+	logger = app.requestLogger("BeginBlock", true, logger)
+
+	defer func() {
+		if err != nil {
+			logger = logger.WithError(err)
+			logger.Error("BeginBlock erred")
+		} else {
+			logger.Info("BeginBlock completed successfully")
+		}
+	}()
+
+	app.blockTime, err = math.TimestampFrom(tmTime)
+	if err != nil {
+		// we panic because without a good block time, we can't recover
+		// The only error conditions for this function are when the timestamp
+		// is before the epoch, and overflowing our time type. Neither case
+		// is likely on a running blockchain.
+		panic(err)
+	}
 
 	app.state.AppendRoundStats(logger, req)
 
@@ -87,7 +89,7 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	// Tell the search we have a new block on the way.
 	search := app.GetSearch()
 	if search != nil {
-		err := search.OnBeginBlock(height, tmTime, tmHash)
+		err = search.OnBeginBlock(height, tmTime, tmHash)
 		if err != nil {
 			logger.WithError(err).Error("Failed to begin block for search")
 		}
@@ -98,10 +100,26 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 
 // DeliverTx services DeliverTx requests
 func (app *App) DeliverTx(bytes []byte) (response abci.ResponseDeliverTx) {
-	tx, rc, logger, err := app.validateTransactable(bytes)
-	app.logRequest("DeliverTx", logger)
-	response.Code = rc
+	var tx metatx.Transactable
+	var err error
+	var logger log.FieldLogger
+
+	tx, response.Code, logger, err = app.validateTransactable(bytes)
+
+	logger = app.requestLogger("DeliverTx", true, logger)
+
+	defer func() {
+		logger = logger.WithField("returnCode", code.ReturnCode(response.Code).String())
+		if err != nil {
+			logger = logger.WithError(err)
+			logger.Error("DeliverTx erred")
+		} else {
+			logger.Info("DeliverTx completed successfully")
+		}
+	}()
+
 	if err != nil {
+		logger = logger.WithField("err.context", "validating transactable")
 		response.Log = err.Error()
 		return
 	}
@@ -115,12 +133,13 @@ func (app *App) DeliverTx(bytes []byte) (response abci.ResponseDeliverTx) {
 		if search != nil {
 			err = search.OnDeliverTx(tx)
 			if err != nil {
-				logger.WithError(err).Error("Failed to deliver tx for search")
+				logger = logger.WithField("err.context", "failed to deliver tx for search")
 				response.Code = uint32(code.IndexingError)
 				response.Log = err.Error()
 			}
 		}
 	} else {
+		logger = logger.WithField("err.context", "applying transaction")
 		response.Code = uint32(code.ErrorApplyingTransaction)
 		response.Log = err.Error()
 	}
@@ -137,18 +156,34 @@ func (app *App) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 //
 // Panics if InitChain has not been called.
 func (app *App) Commit() abci.ResponseCommit {
+	var err error
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
-		"block.qty_transactions": app.transactionsPending,
-		"abci.sequence":          "start",
+		"block.qty_transactions":  app.transactionsPending,
+		"abci.sequence":           "start",
+		"app.transactionsPending": app.transactionsPending,
+		"commit.status":           "pending",
 	})
-	app.logRequest("Commit", logger)
+	logger = app.requestLogger("Commit", true, logger)
 
+	defer func() {
+		if err != nil {
+			logger = logger.WithError(err)
+			logger.Error("Commit erred")
+		} else {
+			logger.Info("Commit completed successfully")
+		}
+	}()
+
+	logger = logger.WithField("abci.sequence", "mid")
 	if app.transactionsPending > 0 {
 		app.transactionsPending = 0
-		err := app.commit(logger)
+		err = app.commit(logger)
 		if err != nil {
-			logger.WithError(err).WithField("abci.sequence", "mid").Error("Failed to commit block")
+			logger = logger.WithFields(log.Fields{
+				"err.context":   "failed to commit block",
+				"commit.status": "failed",
+			})
 			// A panic is appropriate here because the one thing we do _not_ want
 			// in the event that a block cannot be committed is for the app to
 			// just keep ticking along as if things were ok. Crashing the
@@ -163,21 +198,22 @@ func (app *App) Commit() abci.ResponseCommit {
 			panic(err)
 		}
 
+		logger = logger.WithField("commit.status", "success")
+
 		// Index the transactions in the new block.
 		search := app.GetSearch()
 		if search != nil {
 			err = search.OnCommit()
 			if err != nil {
-				logger.WithError(err).WithField("abci.sequence", "mid").Error("Failed to commit for search")
+				// failing to commit for search doesn't cause tx rejection
+				logger.Error("failed to commit for search")
+				err = nil
 			}
 		}
-
-		logger.WithField("abci.sequence", "mid").Info("Committed noms block")
 	} else {
-		logger.WithField("abci.sequence", "mid").Info("Skipped noms commit")
+		logger = logger.WithField("commit.status", "skipped: no txs pending")
 	}
+	logger = logger.WithField("abci.sequence", "end")
 
-	logger = app.DecoratedLogger().WithField("abci.sequence", "end")
-	app.logRequest("Commit", logger)
 	return abci.ResponseCommit{Data: app.Hash()}
 }

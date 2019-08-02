@@ -79,6 +79,12 @@ func (app *App) LogState() {
 //
 // It also returns a decorated logger for request-internal logging.
 func (app *App) logRequestOptHt(method string, showHeight bool, logger log.FieldLogger) log.FieldLogger {
+	logger = app.requestLogger(method, showHeight, logger)
+	logger.Info("received request")
+	return logger
+}
+
+func (app *App) requestLogger(method string, showHeight bool, logger log.FieldLogger) log.FieldLogger {
 	if logger == nil {
 		logger = app.GetLogger()
 	}
@@ -89,7 +95,6 @@ func (app *App) logRequestOptHt(method string, showHeight bool, logger log.Field
 			"app.hash":   app.HashStr(),
 		})
 	}
-	decoratedLogger.Info("received request")
 
 	return decoratedLogger
 }
