@@ -13,33 +13,39 @@ func (z *Transaction) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0001 uint32
 	zb0001, err = dc.ReadMapHeader()
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	for zb0001 > 0 {
 		zb0001--
 		field, err = dc.ReadMapKeyPtr()
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		switch msgp.UnsafeString(field) {
 		case "Nonce":
 			z.Nonce, err = dc.ReadBytes(z.Nonce)
 			if err != nil {
+				err = msgp.WrapError(err, "Nonce")
 				return
 			}
 		case "TransactableID":
 			err = z.TransactableID.DecodeMsg(dc)
 			if err != nil {
+				err = msgp.WrapError(err, "TransactableID")
 				return
 			}
 		case "Transactable":
 			err = z.Transactable.DecodeMsg(dc)
 			if err != nil {
+				err = msgp.WrapError(err, "Transactable")
 				return
 			}
 		default:
 			err = dc.Skip()
 			if err != nil {
+				err = msgp.WrapError(err)
 				return
 			}
 		}
@@ -57,6 +63,7 @@ func (z *Transaction) EncodeMsg(en *msgp.Writer) (err error) {
 	}
 	err = en.WriteBytes(z.Nonce)
 	if err != nil {
+		err = msgp.WrapError(err, "Nonce")
 		return
 	}
 	// write "TransactableID"
@@ -66,6 +73,7 @@ func (z *Transaction) EncodeMsg(en *msgp.Writer) (err error) {
 	}
 	err = z.TransactableID.EncodeMsg(en)
 	if err != nil {
+		err = msgp.WrapError(err, "TransactableID")
 		return
 	}
 	// write "Transactable"
@@ -75,6 +83,7 @@ func (z *Transaction) EncodeMsg(en *msgp.Writer) (err error) {
 	}
 	err = z.Transactable.EncodeMsg(en)
 	if err != nil {
+		err = msgp.WrapError(err, "Transactable")
 		return
 	}
 	return
@@ -91,12 +100,14 @@ func (z *Transaction) MarshalMsg(b []byte) (o []byte, err error) {
 	o = append(o, 0xae, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x49, 0x44)
 	o, err = z.TransactableID.MarshalMsg(o)
 	if err != nil {
+		err = msgp.WrapError(err, "TransactableID")
 		return
 	}
 	// string "Transactable"
 	o = append(o, 0xac, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x61, 0x62, 0x6c, 0x65)
 	o, err = z.Transactable.MarshalMsg(o)
 	if err != nil {
+		err = msgp.WrapError(err, "Transactable")
 		return
 	}
 	return
@@ -109,33 +120,39 @@ func (z *Transaction) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var zb0001 uint32
 	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	for zb0001 > 0 {
 		zb0001--
 		field, bts, err = msgp.ReadMapKeyZC(bts)
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		switch msgp.UnsafeString(field) {
 		case "Nonce":
 			z.Nonce, bts, err = msgp.ReadBytesBytes(bts, z.Nonce)
 			if err != nil {
+				err = msgp.WrapError(err, "Nonce")
 				return
 			}
 		case "TransactableID":
 			bts, err = z.TransactableID.UnmarshalMsg(bts)
 			if err != nil {
+				err = msgp.WrapError(err, "TransactableID")
 				return
 			}
 		case "Transactable":
 			bts, err = z.Transactable.UnmarshalMsg(bts)
 			if err != nil {
+				err = msgp.WrapError(err, "Transactable")
 				return
 			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
+				err = msgp.WrapError(err)
 				return
 			}
 		}

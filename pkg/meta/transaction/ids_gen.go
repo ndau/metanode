@@ -12,6 +12,7 @@ func (z *TxID) DecodeMsg(dc *msgp.Reader) (err error) {
 		var zb0001 uint8
 		zb0001, err = dc.ReadUint8()
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		(*z) = TxID(zb0001)
@@ -23,6 +24,7 @@ func (z *TxID) DecodeMsg(dc *msgp.Reader) (err error) {
 func (z TxID) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteUint8(uint8(z))
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
 	return
@@ -41,6 +43,7 @@ func (z *TxID) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		var zb0001 uint8
 		zb0001, bts, err = msgp.ReadUint8Bytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
 		(*z) = TxID(zb0001)
