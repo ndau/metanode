@@ -211,6 +211,16 @@ func (search *Client) FlushDB() error {
 	return nil
 }
 
+// Del is a wrapper for redis DEL.
+func (search *Client) Del(key string) (int64, error) {
+	err := search.testValidity("Del")
+	if err != nil {
+		return 0, err
+	}
+
+	return search.redis.Del(key).Result()
+}
+
 // Set is a wrapper for redis SET with no expiration.
 func (search *Client) Set(key string, value interface{}) error {
 	err := search.testValidity("Set")
@@ -376,4 +386,35 @@ func (search *Client) ZScan(
 	}
 
 	return nil
+}
+
+// ZUnionStore is a wrapper for redis ZUNIONSTORE.
+func (search *Client) ZUnionStore(key string, searchKeys []string) (int64, error) {
+	err := search.testValidity("ZUnionStore")
+	if err != nil {
+		return 0, err
+	}
+
+	// Using a ZStore with default Weights (all 1's) and Aggregate (SUM).
+	return search.redis.ZUnionStore(key, redis.ZStore{}, searchKeys...).Result()
+}
+
+// ZRevRank is a wrapper for redis ZREVRANK.
+func (search *Client) ZRevRank(key, searchValue string) (int64, error) {
+	err := search.testValidity("ZRevRank")
+	if err != nil {
+		return -1, err
+	}
+
+	return search.redis.ZRevRank(key, searchValue).Result()
+}
+
+// ZRevRange is a wrapper for redis ZREVRANGE without returning scores.
+func (search *Client) ZRevRange(key string, start, stop int64) ([]string, error) {
+	err := search.testValidity("ZRevRange")
+	if err != nil {
+		return nil, err
+	}
+
+	return search.redis.ZRevRange(key, start, stop).Result()
 }
