@@ -4,6 +4,19 @@ package code
 
 import "strconv"
 
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[OK-0]
+	_ = x[InvalidTransaction-1]
+	_ = x[ErrorApplyingTransaction-2]
+	_ = x[EncodingError-3]
+	_ = x[QueryError-4]
+	_ = x[IndexingError-5]
+	_ = x[InvalidNodeState-6]
+}
+
 const _ReturnCode_name = "OKInvalidTransactionErrorApplyingTransactionEncodingErrorQueryErrorIndexingErrorInvalidNodeState"
 
 var _ReturnCode_index = [...]uint8{0, 2, 20, 44, 57, 67, 80, 96}
