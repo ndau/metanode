@@ -35,8 +35,8 @@ func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32,
 }
 
 // CheckTx validates a Transaction
-func (app *App) CheckTx(bytes []byte) (response abci.ResponseCheckTx) {
-	_, rc, logger, err := app.validateTransactable(bytes)
+func (app *App) CheckTx(request abci.RequestCheckTx) (response abci.ResponseCheckTx) {
+	_, rc, logger, err := app.validateTransactable(request.Tx)
 	app.logRequest("CheckTx", logger)
 	response.Code = rc
 	if err != nil {

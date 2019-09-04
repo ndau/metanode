@@ -34,7 +34,7 @@ func (bf *blockFactory) make(txab ...metatx.Transactable) {
 	for _, tx := range txab {
 		txb, err := metatx.Marshal(tx, TxIDs)
 		require.NoError(bf.t, err)
-		dtr := bf.app.DeliverTx(txb)
+		dtr := bf.app.DeliverTx(abci.RequestDeliverTx{Tx: txb})
 		require.True(bf.t, dtr.IsOK())
 	}
 
