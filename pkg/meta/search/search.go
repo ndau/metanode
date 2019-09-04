@@ -399,6 +399,16 @@ func (search *Client) ZUnionStore(key string, searchKeys []string) (int64, error
 	return search.redis.ZUnionStore(key, redis.ZStore{}, searchKeys...).Result()
 }
 
+// ZCount is a wrapper for redis ZCOUNT with no score filtering.
+func (search *Client) ZCount(key string) (int64, error) {
+	err := search.testValidity("ZCount")
+	if err != nil {
+		return -1, err
+	}
+
+	return search.redis.ZCount(key, "-inf", "+inf").Result()
+}
+
 // ZRevRank is a wrapper for redis ZREVRANK.
 func (search *Client) ZRevRank(key, searchValue string) (int64, error) {
 	err := search.testValidity("ZRevRank")
