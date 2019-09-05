@@ -388,15 +388,24 @@ func (search *Client) ZScan(
 	return nil
 }
 
-// ZUnionStore is a wrapper for redis ZUNIONSTORE.
+// ZUnionStore is a wrapper for redis ZUNIONSTORE using default weights and aggregate.
 func (search *Client) ZUnionStore(key string, searchKeys []string) (int64, error) {
 	err := search.testValidity("ZUnionStore")
 	if err != nil {
 		return 0, err
 	}
 
-	// Using a ZStore with default Weights (all 1's) and Aggregate (SUM).
-	return search.redis.ZUnionStore(key, redis.ZStore{}, searchKeys...).Result()
+	size := len(searchKeys)
+	weights := make([]float64, size, size)
+	for i := 0; i < size; i++ {
+		weights[i] = 1.0
+	}
+	store := redis.ZStore{
+		Weights:   weights,
+		Aggregate: "SUM",
+	}
+
+	return search.redis.ZUnionStore(key, store, searchKeys...).Result()
 }
 
 // ZCount is a wrapper for redis ZCOUNT with no score filtering.
