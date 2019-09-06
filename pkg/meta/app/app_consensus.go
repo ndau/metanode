@@ -99,12 +99,12 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 }
 
 // DeliverTx services DeliverTx requests
-func (app *App) DeliverTx(bytes []byte) (response abci.ResponseDeliverTx) {
+func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.ResponseDeliverTx) {
 	var tx metatx.Transactable
 	var err error
 	var logger log.FieldLogger
 
-	tx, response.Code, logger, err = app.validateTransactable(bytes)
+	tx, response.Code, logger, err = app.validateTransactable(request.Tx)
 
 	logger = app.requestLogger("DeliverTx", true, logger)
 

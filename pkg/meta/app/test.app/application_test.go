@@ -24,7 +24,7 @@ func TestNegativeAddTxIsInvalid(t *testing.T) {
 	txBytes, err := metatx.Marshal(tx, TxIDs)
 	require.NoError(t, err)
 
-	resp := app.CheckTx(txBytes)
+	resp := app.CheckTx(abci.RequestCheckTx{Tx: txBytes})
 	require.Equal(t, code.InvalidTransaction, code.ReturnCode(resp.Code))
 }
 
@@ -36,7 +36,7 @@ func TestPositiveAddTxIsValid(t *testing.T) {
 	txBytes, err := metatx.Marshal(tx, TxIDs)
 	require.NoError(t, err)
 
-	resp := app.CheckTx(txBytes)
+	resp := app.CheckTx(abci.RequestCheckTx{Tx: txBytes})
 	require.Equal(t, code.OK, code.ReturnCode(resp.Code))
 }
 
@@ -53,7 +53,7 @@ func TestAddTxProperlyAffectsState(t *testing.T) {
 	require.NoError(t, err)
 
 	app.BeginBlock(abci.RequestBeginBlock{Header: abci.Header{Time: time.Now()}})
-	resp := app.DeliverTx(txBytes)
+	resp := app.DeliverTx(abci.RequestDeliverTx{Tx: txBytes})
 	app.EndBlock(abci.RequestEndBlock{})
 	app.Commit()
 
@@ -78,13 +78,13 @@ func TestInvalidChildStatePreventsTransactions(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("CheckTx", func(t *testing.T) {
-		resp := app.CheckTx(txBytes)
+		resp := app.CheckTx(abci.RequestCheckTx{Tx: txBytes})
 		require.Equal(t, code.InvalidNodeState, code.ReturnCode(resp.Code))
 	})
 
 	t.Run("DeliverTx", func(t *testing.T) {
 		app.BeginBlock(abci.RequestBeginBlock{Header: abci.Header{Time: time.Now()}})
-		resp := app.DeliverTx(txBytes)
+		resp := app.DeliverTx(abci.RequestDeliverTx{Tx: txBytes})
 		app.EndBlock(abci.RequestEndBlock{})
 		app.Commit()
 
