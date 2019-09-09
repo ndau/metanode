@@ -221,6 +221,16 @@ func (search *Client) Del(key string) (int64, error) {
 	return search.redis.Del(key).Result()
 }
 
+// Keys is a wrapper for redis KEYS.
+func (search *Client) Keys(pattern string) ([]string, error) {
+	err := search.testValidity("Keys")
+	if err != nil {
+		return nil, err
+	}
+
+	return search.redis.Keys(pattern).Result()
+}
+
 // Set is a wrapper for redis SET with no expiration.
 func (search *Client) Set(key string, value interface{}) error {
 	err := search.testValidity("Set")
