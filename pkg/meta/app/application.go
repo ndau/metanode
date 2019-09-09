@@ -23,6 +23,9 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+// ensure the app is a TM Application
+var _ abci.Application = (*App)(nil)
+
 // App is an ABCI application which implements an Oneiro chain
 type App struct {
 	abci.BaseApplication

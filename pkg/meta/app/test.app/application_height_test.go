@@ -19,7 +19,7 @@ func issueBlock(t *testing.T, app *TestApp, height uint64, txs ...metatx.Transac
 	for _, tx := range txs {
 		bytes, err := metatx.Marshal(tx, TxIDs)
 		require.NoError(t, err)
-		resp := app.DeliverTx(bytes)
+		resp := app.DeliverTx(abci.RequestDeliverTx{Tx: bytes})
 		t.Log(resp.Log)
 		require.Equal(t, code.OK, code.ReturnCode(resp.Code))
 	}
