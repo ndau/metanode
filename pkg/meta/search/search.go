@@ -409,14 +409,14 @@ func (search *Client) ZUnionStore(key string, searchKeys []string) (int64, error
 	return search.redis.ZUnionStore(key, redis.ZStore{}, searchKeys...).Result()
 }
 
-// ZCount is a wrapper for redis ZCOUNT with no score filtering.
-func (search *Client) ZCount(key string) (int64, error) {
-	err := search.testValidity("ZCount")
+// ZCard is a wrapper for redis ZCARD.  It's like "ZCOUNT key -inf +inf" but is O(1).
+func (search *Client) ZCard(key string) (int64, error) {
+	err := search.testValidity("ZCard")
 	if err != nil {
 		return -1, err
 	}
 
-	return search.redis.ZCount(key, "-inf", "+inf").Result()
+	return search.redis.ZCard(key).Result()
 }
 
 // ZRevRank is a wrapper for redis ZREVRANK.
@@ -437,4 +437,29 @@ func (search *Client) ZRevRange(key string, start, stop int64) ([]string, error)
 	}
 
 	return search.redis.ZRevRange(key, start, stop).Result()
+}
+
+// ZRevRangeByScore is a wrapper for redis ZREVRANGEBYSCORE without returning scores.
+// We use an exclusive range (-inf, max).  The initial use-case for this was for returning all
+// transactions in and before a given block height, and scores for transactions are floats with
+// integer part being the height and fractional part holding the tx offset within the block.
+// So, for example, to get all transactions on or before height 50, we'd use:
+//   ZRevRangeByScore(key, 51.0, count)
+// This will include a transaction with score 50.999 (the 1000th tx in block 50).
+// It will not include a transaction with score 51 (the first tx in block 51).
+// See ndau/pkg/ndau/search/index.go for how we encode height-txoffset pairs in a float score.
+// The count param can be used to limit the number of results.  Zero means no limit.
+func (search *Client) ZRevRangeByScore(key string, max float64, count int64) ([]string, error) {
+	err := search.testValidity("ZRevRangeByScore")
+	if err != nil {
+		return nil, err
+	}
+
+	rangeBy := redis.ZRangeBy{
+		Min:   "-inf",
+		Max:   fmt.Sprintf("(%f", max),
+		Count: count,
+	}
+
+	return search.redis.ZRevRangeByScore(key, rangeBy).Result()
 }
