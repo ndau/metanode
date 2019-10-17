@@ -15,7 +15,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
+
+	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 )
 
 // Date range interval is how many seconds between snapshot we take of the blockchain height.
@@ -49,25 +50,17 @@ const nextHeightFlag = "*"
 // As a way of grouping keys, we use this prefix for date range height snapshot key names.
 // We also use this to store the last snapshot key we indexed.  Useful for blockchains that get
 // update infrequently.  Primarily to avoid an infinite loop when filling in missing snapshots.
-const dateRangeToHeightSearchKeyPrefix = "d:"
-
-// Number of nanoseconds in a second.
-const oneSecond = 1e9
+const dateRangeToHeightSearchKeyPrefix = "date.range:height:"
 
 // Return the number of seconds past midnight of the given time, ignoring nanoseconds.
-func secondsAfterMidnight(t time.Time) int {
-	return t.Hour() * 3600 + t.Minute() * 60 + t.Second()
+func secondsAfterMidnight(t math.Timestamp) int {
+	return int(t%math.Day) / math.Second
 }
 
 // Return the given time, truncated to midnight, then with the given seconds added to it.
-func timeAfterMidnight(t time.Time, seconds int) time.Time {
-	hours := seconds / 3600
-	seconds -= hours * 3600
-
-	minutes := seconds / 60
-	seconds -= minutes * 60
-
-	return time.Date(t.Year(), t.Month(), t.Day(), hours, minutes, seconds, 0, t.Location())
+func timeAfterMidnight(t math.Timestamp, seconds int) math.Timestamp {
+	trunc := t / math.Day
+	return (trunc * math.Day) + math.Timestamp(seconds*math.Second)
 }
 
 // Return the floor of the given time in seconds to the nearest day interval constant.
@@ -81,7 +74,7 @@ func ceilSeconds(seconds int) int {
 }
 
 // Truncate to appropriate snapshot interval using the given trunc method.
-func truncTime(t time.Time, truncMethod func(int) int) time.Time {
+func truncTime(t math.Timestamp, truncMethod func(int) int) math.Timestamp {
 	seconds := secondsAfterMidnight(t)
 	seconds = truncMethod(seconds)
 	return timeAfterMidnight(t, seconds)
@@ -89,16 +82,8 @@ func truncTime(t time.Time, truncMethod func(int) int) time.Time {
 
 // Format the given time into a date key that we index and search on for date range queries.
 // The time should already be trunctated to a multiple of dateRangeInterval seconds past midnight.
-func formatDateRangeToHeightSearchKey(truncatedTime time.Time) string {
-	key := truncatedTime.Format(time.RFC3339)
-
-	// In practice, this was never needed.  But for sanity, let's make sure the keys has the
-	// expected length of 20.  That's "YYYY-MM-DDTHH:MM:SSZ" with no nanoseconds on it.
-	// We don't want to index any nanoseconds.
-	if len(key) > 20 {
-		// Strip off all the nanoseconds (and the Z) then put the Z back on.
-		key = key[:19] + "Z"
-	}
+func formatDateRangeToHeightSearchKey(truncatedTime math.Timestamp) string {
+	key := truncatedTime.String()
 
 	return dateRangeToHeightSearchKeyPrefix + key
 }
@@ -108,7 +93,7 @@ func formatDateRangeToHeightSearchKey(truncatedTime time.Time) string {
 func (search *Client) getHeightFromTime(
 	timeParam string, truncMethod func(int) int,
 ) (uint64, error) {
-	t, err := time.Parse(time.RFC3339, timeParam)
+	t, err := math.ParseTimestamp(timeParam)
 	if err != nil {
 		return 0, err
 	}
@@ -157,15 +142,15 @@ func (search *Client) SearchDateRange(first, last string) (uint64, uint64, error
 		if err != nil {
 			return 0, 0, err
 		}
-	}	
+	}
 
 	return firstHeight, lastHeight, nil
 }
 
 // Helper function for getting the two snapshot times surrounding the given time.
-func getPrevAndNextTimes(t time.Time) (prevTime, nextTime time.Time) {
+func getPrevAndNextTimes(t math.Timestamp) (prevTime, nextTime math.Timestamp) {
 	prevTime = truncTime(t, floorSeconds)
-	nextTime = truncTime(prevTime.Add(time.Duration(oneSecond)), ceilSeconds)
+	nextTime = truncTime(prevTime.Add(math.Duration(math.Second)), ceilSeconds)
 	return
 }
 
@@ -175,13 +160,13 @@ func getPrevAndNextTimes(t time.Time) (prevTime, nextTime time.Time) {
 // this function will fill in all missing date-to-height keys up to the given block time.
 // The given block height must be > 0, which is guaranteed if it comes from Tendermint.
 func (search *Client) IndexDateToHeight(
-	blockTime time.Time, blockHeight uint64,
+	blockTime math.Timestamp, blockHeight uint64,
 ) (updateCount int, insertCount int, err error) {
 	updateCount = 0
 	insertCount = 0
 
 	// Ignore invalid block times.
-	if blockTime.Year() <= 1 {
+	if blockTime < 0 {
 		return updateCount, insertCount, nil
 	}
 
@@ -225,7 +210,7 @@ func (search *Client) IndexDateToHeight(
 
 	// These next steps ensure that we've initialized the date range index.
 	// The earliest time also prevents any chance of an infinite loop later in this function.
-	var earliestTime time.Time
+	var earliestTime math.Timestamp
 	earliestKey, err := search.Get(dateRangeToHeightSearchKeyPrefix)
 	if err != nil {
 		return updateCount, insertCount, err
@@ -241,7 +226,7 @@ func (search *Client) IndexDateToHeight(
 	} else {
 		// Grab the earliest time out of the index.
 		earliestTimestamp := earliestKey[len(dateRangeToHeightSearchKeyPrefix):]
-		earliestTime, err = time.Parse(time.RFC3339, earliestTimestamp)
+		earliestTime, err = math.ParseTimestamp(earliestTimestamp)
 		if err != nil {
 			return updateCount, insertCount, err
 		}
@@ -264,7 +249,7 @@ func (search *Client) IndexDateToHeight(
 	lastBlockHeight := blockHeight - 1
 
 	// Common case: the new block time is almost certainly not right on a snapshot boundary...
-	if !blockTime.Equal(prevTime) {
+	if blockTime != prevTime {
 		// ...so the height at the snapshot point is one less than the new block's height.
 		blockHeight = lastBlockHeight
 	}
@@ -295,12 +280,12 @@ func (search *Client) IndexDateToHeight(
 			break
 		}
 
-		if !prevTime.After(earliestTime) {
+		if prevTime <= earliestTime {
 			// Prevent infinite loop in case something went wrong in the index.
 			break
 		}
 
-		prevTime = prevTime.Add(time.Duration(-dateRangeInterval * oneSecond))
+		prevTime = prevTime.Add(math.Duration(-dateRangeInterval * math.Second))
 		prevKey = formatDateRangeToHeightSearchKey(prevTime)
 		prevValue, err = search.Get(prevKey)
 		if err != nil {
