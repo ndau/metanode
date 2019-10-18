@@ -184,6 +184,11 @@ func (search *Client) GetNextHeight() uint64 {
 	return search.height
 }
 
+// Inner returns the internal bare client so that methods can be accessed without wrapping
+func (search *Client) Inner() *redis.Client {
+	return search.redis
+}
+
 // Ping is a wrapper for redis PING.
 func (search *Client) Ping() error {
 	err := search.testValidity("Ping")
