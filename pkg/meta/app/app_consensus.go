@@ -13,7 +13,6 @@ package app
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
@@ -24,8 +23,11 @@ import (
 
 // IncrementalIndexer declares methods for incremental indexing.
 type IncrementalIndexer interface {
-	OnBeginBlock(height uint64, blockTime time.Time, tmHash string) error
-	OnDeliverTx(tx metatx.Transactable) error
+	OnBeginBlock(height uint64, blockTime math.Timestamp, tmHash string) error
+
+	// OnDeliverTx is called only after the tx has been successfully applied
+	OnDeliverTx(app interface{}, tx metatx.Transactable) error
+
 	OnCommit() error
 }
 
@@ -98,7 +100,7 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	// Tell the search we have a new block on the way.
 	search := app.GetSearch()
 	if search != nil {
-		err = search.OnBeginBlock(height, tmTime, tmHash)
+		err = search.OnBeginBlock(height, app.blockTime, tmHash)
 		if err != nil {
 			logger.WithError(err).Error("Failed to begin block for search")
 		}
@@ -140,7 +142,7 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 		// Update the search with the new transaction.
 		search := app.GetSearch()
 		if search != nil {
-			err = search.OnDeliverTx(tx)
+			err = search.OnDeliverTx(app.childApp, tx)
 			if err != nil {
 				logger = logger.WithField("err.context", "failed to deliver tx for search")
 				response.Code = uint32(code.IndexingError)
