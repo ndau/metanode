@@ -128,6 +128,10 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 		} else {
 			logger.Info("DeliverTx completed successfully")
 		}
+
+		// no matter if they got applied or not, we don't want to persist any thunks
+		// past this tx
+		app.deferredThunks = nil
 	}()
 
 	if err != nil {
