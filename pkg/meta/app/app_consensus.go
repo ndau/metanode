@@ -15,6 +15,7 @@ import (
 	"fmt"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
+	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
 	log "github.com/sirupsen/logrus"
@@ -137,6 +138,24 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 	app.checkChild()
 	err = tx.Apply(app.childApp)
 	if err == nil {
+		// wrap the deferred thunks in a format that app.UpdateState can call
+		wthunks := make([]func(metast.State) (metast.State, error), 0, len(app.deferredThunks))
+		for _, thunk := range app.deferredThunks {
+			wthunks = append(wthunks, func(st metast.State) (metast.State, error) {
+				st = thunk(st)
+				if st == nil {
+					// thunks are never allowed to return nil states,
+					// and if one does so, we can't recover
+					panic("deferred thunk returned nil state")
+				}
+				return st, nil
+			})
+		}
+		// ignore the returned error: if no thunk errors (and they aren't allowed to!),
+		// then the UpdateState call can't error
+		app.UpdateState(wthunks...)
+
+		// the qty of pending txs informs whether we noms-commit, or just continue
 		app.transactionsPending++
 
 		// Update the search with the new transaction.
