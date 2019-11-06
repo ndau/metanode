@@ -126,6 +126,9 @@ type App struct {
 
 	// official chain time of the current block
 	blockTime math.Timestamp
+
+	// thunks to be applied at tx's end if application was otherwise successful
+	deferredThunks []Thunk
 }
 
 // NewApp prepares a new App
