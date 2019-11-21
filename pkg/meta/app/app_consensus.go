@@ -22,24 +22,14 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// IncrementalIndexer declares methods for incremental indexing.
-type IncrementalIndexer interface {
-	OnBeginBlock(height uint64, blockTime math.Timestamp, tmHash string) error
-
-	// OnDeliverTx is called only after the tx has been successfully applied
-	OnDeliverTx(app interface{}, tx metatx.Transactable) error
-
-	OnCommit() error
-}
-
 // InitChain performs necessary chain initialization.
 //
 // This includes saving the initial validator set in the local state.
-func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInitChain) {
+func (app *App) InitChain(request abci.RequestInitChain) (response abci.ResponseInitChain) {
 	logger := app.logRequestBare("InitChain", nil)
 
 	// now add the initial validators set
-	for _, v := range req.Validators {
+	for _, v := range request.Validators {
 		app.state.UpdateValidator(app.db, v)
 	}
 
@@ -55,14 +45,19 @@ func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInit
 	}
 
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
+
+	if app.indexer != nil {
+		app.indexer.InitChain(request, response, app.GetState())
+	}
+
 	return
 }
 
 // BeginBlock tracks the block hash and header information
-func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	tmHeight := req.GetHeader().Height
-	tmTime := req.GetHeader().Time
-	tmHash := fmt.Sprintf("%x", req.GetHash())
+func (app *App) BeginBlock(request abci.RequestBeginBlock) (response abci.ResponseBeginBlock) {
+	tmHeight := request.GetHeader().Height
+	tmTime := request.GetHeader().Time
+	tmHash := fmt.Sprintf("%x", request.GetHash())
 
 	var err error
 	var logger log.FieldLogger
@@ -91,7 +86,7 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 		panic(err)
 	}
 
-	app.state.AppendRoundStats(logger, req)
+	app.state.AppendRoundStats(logger, request)
 
 	// reset valset changes
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
@@ -99,15 +94,11 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	app.SetHeight(height)
 
 	// Tell the search we have a new block on the way.
-	search := app.GetSearch()
-	if search != nil {
-		err = search.OnBeginBlock(height, app.blockTime, tmHash)
-		if err != nil {
-			logger.WithError(err).Error("Failed to begin block for search")
-		}
+	if app.indexer != nil {
+		app.indexer.BeginBlock(request, response, app.GetState())
 	}
 
-	return abci.ResponseBeginBlock{}
+	return
 }
 
 // DeliverTx services DeliverTx requests
@@ -163,14 +154,8 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 		app.transactionsPending++
 
 		// Update the search with the new transaction.
-		search := app.GetSearch()
-		if search != nil {
-			err = search.OnDeliverTx(app.childApp, tx)
-			if err != nil {
-				logger = logger.WithField("err.context", "failed to deliver tx for search")
-				response.Code = uint32(code.IndexingError)
-				response.Log = err.Error()
-			}
+		if app.indexer != nil {
+			app.indexer.DeliverTx(request, response, tx, app.GetState())
 		}
 	} else {
 		logger = logger.WithField("err.context", "applying transaction")
@@ -181,15 +166,19 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 }
 
 // EndBlock updates the validator set
-func (app *App) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
+func (app *App) EndBlock(request abci.RequestEndBlock) (response abci.ResponseEndBlock) {
 	app.logRequest("EndBlock", nil)
-	return abci.ResponseEndBlock{ValidatorUpdates: app.ValUpdates}
+	response.ValidatorUpdates = app.ValUpdates
+	if app.indexer != nil {
+		app.indexer.EndBlock(request, response, app.GetState())
+	}
+	return
 }
 
 // Commit saves a new version
 //
 // Panics if InitChain has not been called.
-func (app *App) Commit() abci.ResponseCommit {
+func (app *App) Commit() (response abci.ResponseCommit) {
 	var err error
 	var logger log.FieldLogger
 	logger = app.DecoratedLogger().WithFields(log.Fields{
@@ -233,21 +222,16 @@ func (app *App) Commit() abci.ResponseCommit {
 		}
 
 		logger = logger.WithField("commit.status", "success")
-
-		// Index the transactions in the new block.
-		search := app.GetSearch()
-		if search != nil {
-			err = search.OnCommit()
-			if err != nil {
-				// failing to commit for search doesn't cause tx rejection
-				logger.Error("failed to commit for search")
-				err = nil
-			}
-		}
 	} else {
 		logger = logger.WithField("commit.status", "skipped: no txs pending")
 	}
 	logger = logger.WithField("abci.sequence", "end")
 
-	return abci.ResponseCommit{Data: app.Hash()}
+	response.Data = app.Hash()
+
+	if app.indexer != nil {
+		app.indexer.Commit(response, app.GetState())
+	}
+
+	return
 }

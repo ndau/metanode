@@ -1,7 +1,5 @@
 package state
 
-//go:generate go run $GOPATH/src/github.com/oneiro-ndev/generator/cmd/nomsify $GOPATH/src/github.com/oneiro-ndev/metanode/pkg/meta/state
-//go:generate find $GOPATH/src/github.com/oneiro-ndev/metanode/pkg/meta/state -name "*noms_gen*.go" -maxdepth 1 -exec goimports -w {} ;
 // ----- ---- --- -- -
 // Copyright 2019 Oneiro NA, Inc. All Rights Reserved.
 //
@@ -11,3 +9,5 @@ package state
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
+//go:generate go run $GOPATH/src/github.com/oneiro-ndev/generator/cmd/nomsify $GOPATH/src/github.com/oneiro-ndev/metanode/pkg/meta/state
+//go:generate find $GOPATH/src/github.com/oneiro-ndev/metanode/pkg/meta/state -name "*noms_gen*.go" -maxdepth 1 -exec goimports -w {} ;
