@@ -13,6 +13,7 @@ package app
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
@@ -26,7 +27,16 @@ import (
 //
 // This includes saving the initial validator set in the local state.
 func (app *App) InitChain(request abci.RequestInitChain) (response abci.ResponseInitChain) {
+	var err error
 	logger := app.logRequestBare("InitChain", nil)
+	defer func() {
+		if err != nil {
+			logger = logger.WithError(err)
+			logger.Error("InitChain erred")
+		} else {
+			logger.Info("InitChain completed successfully")
+		}
+	}()
 
 	// now add the initial validators set
 	for _, v := range request.Validators {
@@ -37,17 +47,20 @@ func (app *App) InitChain(request abci.RequestInitChain) (response abci.Response
 	// 1. we actually have a head value
 	// 2. the initial validators are present from tendermint height 0
 	app.SetHeight(app.height + 1)
-	err := app.commit(logger)
+	err = app.commit(logger)
 	if err != nil {
-		logger.WithError(err).Error("InitChain app commit failed")
-		// fail fast if we can't actually initialize the chain
 		panic(err.Error())
 	}
 
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
 
 	if app.indexer != nil {
+		start := time.Now()
 		app.indexer.InitChain(request, response, app.GetState())
+		duration := time.Since(start)
+		logger = logger.WithFields(log.Fields{
+			"index.elapsed.ns": duration.Nanoseconds(),
+		})
 	}
 
 	return
@@ -95,7 +108,12 @@ func (app *App) BeginBlock(request abci.RequestBeginBlock) (response abci.Respon
 
 	// Tell the search we have a new block on the way.
 	if app.indexer != nil {
+		start := time.Now()
 		app.indexer.BeginBlock(request, response, app.GetState())
+		duration := time.Since(start)
+		logger = logger.WithFields(log.Fields{
+			"index.elapsed.ns": duration.Nanoseconds(),
+		})
 	}
 
 	return
@@ -155,7 +173,12 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 
 		// Update the search with the new transaction.
 		if app.indexer != nil {
+			start := time.Now()
 			app.indexer.DeliverTx(request, response, tx, app.GetState())
+			duration := time.Since(start)
+			logger = logger.WithFields(log.Fields{
+				"index.elapsed.ns": duration.Nanoseconds(),
+			})
 		}
 	} else {
 		logger = logger.WithField("err.context", "applying transaction")
@@ -167,10 +190,19 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 
 // EndBlock updates the validator set
 func (app *App) EndBlock(request abci.RequestEndBlock) (response abci.ResponseEndBlock) {
-	app.logRequest("EndBlock", nil)
+	logger := app.logRequest("EndBlock", nil)
+	defer func() {
+		logger.Info("EndBlock completed successfully")
+	}()
 	response.ValidatorUpdates = app.ValUpdates
+	logger = logger.WithField("validatorUpdates.qty", len(response.ValidatorUpdates))
 	if app.indexer != nil {
+		start := time.Now()
 		app.indexer.EndBlock(request, response, app.GetState())
+		duration := time.Since(start)
+		logger = logger.WithFields(log.Fields{
+			"index.elapsed.ns": duration.Nanoseconds(),
+		})
 	}
 	return
 }
@@ -230,7 +262,12 @@ func (app *App) Commit() (response abci.ResponseCommit) {
 	response.Data = app.Hash()
 
 	if app.indexer != nil {
+		start := time.Now()
 		app.indexer.Commit(response, app.GetState())
+		duration := time.Since(start)
+		logger = logger.WithFields(log.Fields{
+			"index.elapsed.ns": duration.Nanoseconds(),
+		})
 	}
 
 	return
