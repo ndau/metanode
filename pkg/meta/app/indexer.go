@@ -20,9 +20,9 @@ import (
 // It probably has extra methods with which to search the database, but we
 // don't care about those here.
 type Indexer interface {
-	InitChain(abci.RequestInitChain, abci.ResponseInitChain, metast.State)
-	BeginBlock(abci.RequestBeginBlock, abci.ResponseBeginBlock, metast.State)
-	DeliverTx(abci.RequestDeliverTx, abci.ResponseDeliverTx, metatx.Transactable, metast.State) // only called for valid txs
-	EndBlock(abci.RequestEndBlock, abci.ResponseEndBlock, metast.State)
-	Commit(abci.ResponseCommit, metast.State)
+	InitChain(abci.RequestInitChain, abci.ResponseInitChain, metast.State) error
+	BeginBlock(abci.RequestBeginBlock, abci.ResponseBeginBlock, metast.State) error
+	DeliverTx(abci.RequestDeliverTx, abci.ResponseDeliverTx, metatx.Transactable, metast.State) error // only called for valid txs
+	EndBlock(abci.RequestEndBlock, abci.ResponseEndBlock, metast.State) error
+	Commit(abci.ResponseCommit, metast.State) error
 }

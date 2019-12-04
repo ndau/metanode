@@ -19,6 +19,7 @@ import (
 	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
 	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
 	math "github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -56,7 +57,7 @@ func (app *App) InitChain(request abci.RequestInitChain) (response abci.Response
 
 	if app.indexer != nil {
 		start := time.Now()
-		app.indexer.InitChain(request, response, app.GetState())
+		err = errors.Wrap(app.indexer.InitChain(request, response, app.GetState()), "indexing")
 		duration := time.Since(start)
 		logger = logger.WithFields(log.Fields{
 			"index.elapsed.ns": duration.Nanoseconds(),
@@ -109,7 +110,7 @@ func (app *App) BeginBlock(request abci.RequestBeginBlock) (response abci.Respon
 	// Tell the search we have a new block on the way.
 	if app.indexer != nil {
 		start := time.Now()
-		app.indexer.BeginBlock(request, response, app.GetState())
+		err = errors.Wrap(app.indexer.BeginBlock(request, response, app.GetState()), "indexing")
 		duration := time.Since(start)
 		logger = logger.WithFields(log.Fields{
 			"index.elapsed.ns": duration.Nanoseconds(),
@@ -125,8 +126,6 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 	var err error
 	var logger log.FieldLogger
 
-	tx, response.Code, logger, err = app.validateTransactable(request.Tx)
-
 	logger = app.requestLogger("DeliverTx", true, logger)
 
 	defer func() {
@@ -134,6 +133,7 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 		if err != nil {
 			logger = logger.WithError(err)
 			logger.Error("DeliverTx erred")
+			response.Log = err.Error()
 		} else {
 			logger.Info("DeliverTx completed successfully")
 		}
@@ -143,6 +143,7 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 		app.deferredThunks = nil
 	}()
 
+	tx, response.Code, logger, err = app.validateTransactable(request.Tx)
 	if err != nil {
 		logger = logger.WithField("err.context", "validating transactable")
 		response.Log = err.Error()
@@ -174,7 +175,7 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 		// Update the search with the new transaction.
 		if app.indexer != nil {
 			start := time.Now()
-			app.indexer.DeliverTx(request, response, tx, app.GetState())
+			err = errors.Wrap(app.indexer.DeliverTx(request, response, tx, app.GetState()), "indexing")
 			duration := time.Since(start)
 			logger = logger.WithFields(log.Fields{
 				"index.elapsed.ns": duration.Nanoseconds(),
@@ -190,15 +191,21 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 
 // EndBlock updates the validator set
 func (app *App) EndBlock(request abci.RequestEndBlock) (response abci.ResponseEndBlock) {
+	var err error
 	logger := app.logRequest("EndBlock", nil)
 	defer func() {
-		logger.Info("EndBlock completed successfully")
+		if err != nil {
+			logger = logger.WithError(err)
+			logger.Error("EndBlock erred")
+		} else {
+			logger.Info("EndBlock completed successfully")
+		}
 	}()
 	response.ValidatorUpdates = app.ValUpdates
 	logger = logger.WithField("validatorUpdates.qty", len(response.ValidatorUpdates))
 	if app.indexer != nil {
 		start := time.Now()
-		app.indexer.EndBlock(request, response, app.GetState())
+		err = errors.Wrap(app.indexer.EndBlock(request, response, app.GetState()), "indexing")
 		duration := time.Since(start)
 		logger = logger.WithFields(log.Fields{
 			"index.elapsed.ns": duration.Nanoseconds(),
@@ -263,7 +270,7 @@ func (app *App) Commit() (response abci.ResponseCommit) {
 
 	if app.indexer != nil {
 		start := time.Now()
-		app.indexer.Commit(response, app.GetState())
+		err = errors.Wrap(app.indexer.Commit(response, app.GetState()), "indexing")
 		duration := time.Since(start)
 		logger = logger.WithFields(log.Fields{
 			"index.elapsed.ns": duration.Nanoseconds(),
