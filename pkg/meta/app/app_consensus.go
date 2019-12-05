@@ -200,14 +200,15 @@ func (app *App) Commit() abci.ResponseCommit {
 	})
 	logger = app.requestLogger("Commit", true, logger)
 
-	defer func() {
+	finalizeLogger := func() {
 		if err != nil {
 			logger = logger.WithError(err)
 			logger.Error("Commit erred")
 		} else {
 			logger.Info("Commit completed successfully")
 		}
-	}()
+	}
+	defer finalizeLogger()
 
 	logger = logger.WithField("abci.sequence", "mid")
 	if app.transactionsPending > 0 {
@@ -218,6 +219,22 @@ func (app *App) Commit() abci.ResponseCommit {
 				"err.context":   "failed to commit block",
 				"commit.status": "failed",
 			})
+			// finalize the logger and flush it now; otherwise, the panic here
+			// is likely to kill the whole process before it actually gets
+			// sent off.
+			finalizeLogger()
+			type flusher interface {
+				Flush()
+			}
+			lhs := logger.(*log.Entry).Logger.Hooks
+			for _, hs := range lhs {
+				for _, h := range hs {
+					if f, ok := h.(flusher); ok {
+						f.Flush()
+					}
+				}
+			}
+
 			// A panic is appropriate here because the one thing we do _not_ want
 			// in the event that a block cannot be committed is for the app to
 			// just keep ticking along as if things were ok. Crashing the
