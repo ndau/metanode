@@ -15,8 +15,8 @@ import (
 	"testing"
 
 	nt "github.com/attic-labs/noms/go/types"
-	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
-	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	metast "github.com/ndau/metanode/pkg/meta/state"
+	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )

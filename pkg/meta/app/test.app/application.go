@@ -13,9 +13,9 @@ package testapp
 import (
 	"io/ioutil"
 
-	meta "github.com/oneiro-ndev/metanode/pkg/meta/app"
-	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
-	util "github.com/oneiro-ndev/noms-util"
+	meta "github.com/ndau/metanode/pkg/meta/app"
+	metast "github.com/ndau/metanode/pkg/meta/state"
+	util "github.com/ndau/noms-util"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )

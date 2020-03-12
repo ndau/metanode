@@ -14,7 +14,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
+	"github.com/ndau/metanode/pkg/meta/app/code"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 )

@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
-	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	"github.com/ndau/metanode/pkg/meta/app/code"
+	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 )

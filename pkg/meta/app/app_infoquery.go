@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
+	"github.com/ndau/metanode/pkg/meta/app/code"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
 )

@@ -14,7 +14,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 )
 
 //go:generate msgp -tests=0

@@ -13,7 +13,7 @@ package testapp
 import (
 	"encoding/binary"
 
-	meta "github.com/oneiro-ndev/metanode/pkg/meta/app"
+	meta "github.com/ndau/metanode/pkg/meta/app"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 

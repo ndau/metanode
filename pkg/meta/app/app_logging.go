@@ -13,7 +13,7 @@ package app
 import (
 	"os"
 
-	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
+	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 	log "github.com/sirupsen/logrus"
 )
 

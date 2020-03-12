@@ -10,7 +10,7 @@
 
 package app
 
-import metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
+import metast "github.com/ndau/metanode/pkg/meta/state"
 
 // A Thunk is a unit of computation prepared in one place and executed in
 // another. It turns out that we need to be able to register and playback

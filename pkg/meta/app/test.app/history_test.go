@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oneiro-ndev/metanode/pkg/meta/state"
-	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
-	util "github.com/oneiro-ndev/noms-util"
+	"github.com/ndau/metanode/pkg/meta/state"
+	metatx "github.com/ndau/metanode/pkg/meta/transaction"
+	util "github.com/ndau/noms-util"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 )

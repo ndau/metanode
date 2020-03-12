@@ -9,7 +9,7 @@ The purpose of this package is to abstract that interface's implementation.
 - [ ] subclass the meta-application:
 
     ```go
-    import meta "github.com/oneiro-ndev/metanode/pkg/meta/app"
+    import meta "github.com/ndau/metanode/pkg/meta/app"
     type MyApp struct {
         *meta.App
         ...

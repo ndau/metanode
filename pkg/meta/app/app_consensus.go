@@ -15,10 +15,10 @@ package app
 import (
 	"fmt"
 
-	"github.com/oneiro-ndev/metanode/pkg/meta/app/code"
-	metast "github.com/oneiro-ndev/metanode/pkg/meta/state"
-	metatx "github.com/oneiro-ndev/metanode/pkg/meta/transaction"
-	math "github.com/oneiro-ndev/ndaumath/pkg/types"
+	"github.com/ndau/metanode/pkg/meta/app/code"
+	metast "github.com/ndau/metanode/pkg/meta/state"
+	metatx "github.com/ndau/metanode/pkg/meta/transaction"
+	math "github.com/ndau/ndaumath/pkg/types"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
 )

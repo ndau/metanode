@@ -17,7 +17,7 @@ import (
 	"reflect"
 
 	"github.com/gofrs/uuid"
-	"github.com/oneiro-ndev/ndaumath/pkg/signature"
+	"github.com/ndau/ndaumath/pkg/signature"
 	"github.com/pkg/errors"
 	"github.com/tinylib/msgp/msgp"
 )

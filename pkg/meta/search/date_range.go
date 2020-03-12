@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"strings"
 
-	math "github.com/oneiro-ndev/ndaumath/pkg/types"
+	math "github.com/ndau/ndaumath/pkg/types"
 )
 
 // Date range interval is how many seconds between snapshot we take of the blockchain height.
