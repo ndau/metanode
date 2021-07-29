@@ -9,7 +9,6 @@ package search
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 // Base searching and indexing API.
 
 import (
@@ -473,6 +472,21 @@ func (search *Client) ZRevRangeByScore(key string, max float64, count int64) ([]
 	rangeBy := redis.ZRangeBy{
 		Min:   "-inf",
 		Max:   fmt.Sprintf("(%f", max),
+		Count: count,
+	}
+
+	return search.redis.ZRevRangeByScore(key, rangeBy).Result()
+}
+
+func (search *Client) ZRevRangeByScoreMinMax(key string, min float64, max float64, count int64) ([]string, error) {
+	err := search.testValidity("ZRevRangeByScore")
+	if err != nil {
+		return nil, err
+	}
+
+	rangeBy := redis.ZRangeBy{
+		Min:   fmt.Sprintf("%f", min),
+		Max:   fmt.Sprintf("%f", max),
 		Count: count,
 	}
 
