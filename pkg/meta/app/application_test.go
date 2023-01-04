@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"testing"
 
-	nt "github.com/attic-labs/noms/go/types"
+	nt "github.com/ndau/noms/go/types"
 	metast "github.com/ndau/metanode/pkg/meta/state"
 	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 	"github.com/pkg/errors"

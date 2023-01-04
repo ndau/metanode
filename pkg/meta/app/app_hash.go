@@ -13,7 +13,7 @@ package app
 import (
 	"encoding/hex"
 
-	"github.com/attic-labs/noms/go/hash"
+	"github.com/ndau/noms/go/hash"
 )
 
 // bytesOfHash gets an actual byte slice out of a noms hash.Hash

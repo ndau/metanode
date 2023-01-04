@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/attic-labs/noms/go/marshal"
-	nt "github.com/attic-labs/noms/go/types"
+	"github.com/ndau/noms/go/marshal"
+	nt "github.com/ndau/noms/go/types"
 	util "github.com/ndau/noms-util"
 	"github.com/pkg/errors"
 )

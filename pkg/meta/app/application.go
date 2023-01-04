@@ -22,9 +22,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/attic-labs/noms/go/d"
-	"github.com/attic-labs/noms/go/datas"
-	"github.com/attic-labs/noms/go/spec"
+	"github.com/ndau/noms/go/d"
+	"github.com/ndau/noms/go/datas"
+	"github.com/ndau/noms/go/spec"
 	metast "github.com/ndau/metanode/pkg/meta/state"
 	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 	math "github.com/ndau/ndaumath/pkg/types"

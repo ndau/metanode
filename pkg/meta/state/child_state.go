@@ -11,8 +11,8 @@ package state
 
 
 import (
-	"github.com/attic-labs/noms/go/marshal"
-	nt "github.com/attic-labs/noms/go/types"
+	"github.com/ndau/noms/go/marshal"
+	nt "github.com/ndau/noms/go/types"
 )
 
 // State is a generic application state, backed by noms.

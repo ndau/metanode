@@ -5,8 +5,8 @@
 package state
 
 import (
-	"github.com/attic-labs/noms/go/datas"
-	"github.com/attic-labs/noms/go/marshal"
+	"github.com/ndau/noms/go/datas"
+	"github.com/ndau/noms/go/marshal"
 	"github.com/pkg/errors"
 )
 

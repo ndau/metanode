@@ -13,7 +13,7 @@ package state
 import (
 	"encoding/base64"
 
-	"github.com/attic-labs/noms/go/datas"
+	"github.com/ndau/noms/go/datas"
 	"github.com/pkg/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto"

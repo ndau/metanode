@@ -11,8 +11,8 @@ package state
 
 
 import (
-	"github.com/attic-labs/noms/go/datas"
-	nt "github.com/attic-labs/noms/go/types"
+	"github.com/ndau/noms/go/datas"
+	nt "github.com/ndau/noms/go/types"
 	"github.com/pkg/errors"
 )
 
