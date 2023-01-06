@@ -7,7 +7,6 @@
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 // This file contains info/query connection methods for the App
 
 package app
@@ -32,6 +31,7 @@ func (app *App) Info(req abci.RequestInfo) (resInfo abci.ResponseInfo) {
 }
 
 // SetOption sets application options, but is entirely undocumented
+// Note - Vle: The method has been removed from the ABCI.Client interface from tendermint version 0.35
 func (app *App) SetOption(request abci.RequestSetOption) (response abci.ResponseSetOption) {
 	var logger log.FieldLogger
 	logger = app.GetLogger().WithFields(log.Fields{

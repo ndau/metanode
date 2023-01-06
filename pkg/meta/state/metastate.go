@@ -19,10 +19,9 @@ import (
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 // Metastate wraps the client app state and keeps track of bookkeeping data
 // such as the validator set and height offset.
-//nomsify Metastate
+// nomsify Metastate
 type Metastate struct {
 	Validators map[string]int64
 	Height     uint64
@@ -60,12 +59,22 @@ func (state *Metastate) Load(db datas.Database, ds datas.Dataset, child State) (
 			return ds, errors.Wrap(err, "Load failed to marshal metastate")
 		}
 
-		// commit the empty head so when we go to get things later, we don't
-		// panic due to an empty dataset
-		ds, err = db.CommitValue(ds, head)
-		if err != nil {
-			return ds, errors.Wrap(err, "Load failed to commit new head")
-		}
+		// DEBUG - Vle theory: In case of fresh start from genesis, Tendermint has the the app height of 0, while this direct commit
+		// to noms db causes the app height increased to 1. Noted that tendermint is not running at this time.
+		// Later on, when Tendermint starts, it sends Info query to this ABCI app and got app height 1 and throws handshake error:
+		// "tendermint ERROR: failed to create node: error during handshake: error on replay: could not find results for height #1"
+		// However, when starting ndaunode from a snapshot this error will not happen as both the tendermint and noms data always has
+		// the same height
+		// Solution: Temporarily comment the below code lines.
+		// Question: Why does it need an dummy state at height 1? Can we pernamently remove this code?
+
+		// // commit the empty head so when we go to get things later, we don't
+		// // panic due to an empty dataset
+		// ds, err = db.CommitValue(ds, head)
+		// if err != nil {
+		// 	return ds, errors.Wrap(err, "Load failed to commit new head")
+		// }
+		// End DEBUG
 	}
 	if state.ChildState == nil {
 		// ensure we can unmarshal the child state without a nil pointer exception
