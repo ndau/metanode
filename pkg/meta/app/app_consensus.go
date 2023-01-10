@@ -7,7 +7,6 @@
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 // This file contains consensus connection methods for the App
 
 package app
@@ -47,7 +46,15 @@ func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInit
 	// commiting here ensures two things:
 	// 1. we actually have a head value
 	// 2. the initial validators are present from tendermint height 0
-	app.SetHeight(app.height + 1)
+
+	// Debug - Tendermint 0.33 upgrade: Due to pre-genesis accounting data, the blockchain
+	// had to start with preset state data having date which is erlier than genesis date.
+	// And so the blockchain has to start from snapshot-1 with the height of 1.
+	// Nowadays, new nodes should just need to sync from block zero
+	// app.SetHeight(app.height + 1)
+	app.SetHeight(app.height)
+	// End Debug
+
 	err := app.commit(logger)
 	if err != nil {
 		logger.WithError(err).Error("InitChain app commit failed")
