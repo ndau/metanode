@@ -9,14 +9,13 @@ package state
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
 	"fmt"
 	"reflect"
 
+	util "github.com/ndau/noms-util"
 	"github.com/ndau/noms/go/marshal"
 	nt "github.com/ndau/noms/go/types"
-	util "github.com/ndau/noms-util"
 	"github.com/pkg/errors"
 )
 
