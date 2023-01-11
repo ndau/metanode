@@ -63,7 +63,16 @@ func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInit
 	}
 
 	app.ValUpdates = make([]abci.ValidatorUpdate, 0)
-	return
+
+	// Note - Tendermint 0.33 upgrade: Should the app_hash be returned to tendermint to
+	// allow starting the block sync? Let's test that
+	// return
+	return abci.ResponseInitChain{
+		ConsensusParams: req.ConsensusParams,
+		Validators:      req.Validators,
+		AppHash:         app.Hash(),
+	}
+	// End Note
 }
 
 // BeginBlock tracks the block hash and header information
