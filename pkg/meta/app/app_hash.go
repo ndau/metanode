@@ -9,7 +9,6 @@ package app
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
 	"encoding/hex"
 
@@ -29,6 +28,16 @@ func bytesOfHash(hash hash.Hash) []byte {
 
 // Hash returns the current hash of the dataset
 func (app *App) Hash() []byte {
+	// Note - tendermint 0.33 upgrade:
+	// On genesis, the noms has no any dataset. So the app_hash is set to be just an empty string. And
+	// the app_hash in the tendermint genesis.json should also be set to empty.
+	// On the other hand, when a node starts from a certain block height, noms database must exists already. And
+	// so the app_hash would be returned from calculation from noms dataset
+	if _, ok := app.ds.MaybeHeadValue(); !ok {
+		return []byte("")
+	}
+	// End Note
+
 	return bytesOfHash(app.ds.HeadRef().Hash())
 }
 
