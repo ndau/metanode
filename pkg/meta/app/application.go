@@ -154,9 +154,14 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		dbSpec = "mem"
 	}
 
-	sp, err := spec.ForDatabase(fmt.Sprintf("%s::ndau", dbSpec))
+	_, err := spec.ForDatabase(dbSpec)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewApp failed to create noms db")
+		return nil, errors.Wrap(err, "Could not access database")
+	}
+
+	sp, err := spec.ForDataset(fmt.Sprintf("%s::ndau", dbSpec))
+	if err != nil {
+		return nil, errors.Wrap(err, "NewApp failed to create noms ndau db")
 	}
 
 	var db datas.Database
