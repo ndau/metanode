@@ -7,7 +7,6 @@
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 // This file contains the basic definition for an ABCI Application.
 //
 // Interface: https://godoc.org/github.com/tendermint/tendermint/abci/types#Application
@@ -22,12 +21,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ndau/noms/go/d"
-	"github.com/ndau/noms/go/datas"
-	"github.com/ndau/noms/go/spec"
 	metast "github.com/ndau/metanode/pkg/meta/state"
 	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 	math "github.com/ndau/ndaumath/pkg/types"
+	"github.com/ndau/noms/go/d"
+	"github.com/ndau/noms/go/datas"
+	"github.com/ndau/noms/go/spec"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -134,28 +133,28 @@ type App struct {
 
 // NewApp prepares a new App
 //
-// - `dbSpec` is the database spec string; empty or "mem" for in-memory,
+//   - `dbSpec` is the database spec string; empty or "mem" for in-memory,
 //     the connection path (parseable by noms)
-// - `name` is the name of this app
-// - `childState` is the child state manager. It must be initialized to its zero value.
-// - `txIDs` is the map of transaction ids to example structs
+//   - `name` is the name of this app
+//   - `childState` is the child state manager. It must be initialized to its zero value.
+//   - `txIDs` is the map of transaction ids to example structs
 func NewApp(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap) (*App, error) {
 	return NewAppWithLogger(dbSpec, name, childState, txIDs, nil)
 }
 
 // NewAppWithLogger prepares a new App
 //
-// - `dbSpec` is the database spec string; empty or "mem" for in-memory,
+//   - `dbSpec` is the database spec string; empty or "mem" for in-memory,
 //     the connection path (parseable by noms)
-// - `name` is the name of this app
-// - `childState` is the child state manager. It must be initialized to its zero value.
-// - `txIDs` is the map of transaction ids to example structs
+//   - `name` is the name of this app
+//   - `childState` is the child state manager. It must be initialized to its zero value.
+//   - `txIDs` is the map of transaction ids to example structs
 func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs metatx.TxIDMap, logger log.FieldLogger) (*App, error) {
 	if len(dbSpec) == 0 {
 		dbSpec = "mem"
 	}
 
-	sp, err := spec.ForDatabase(dbSpec)
+	sp, err := spec.ForDatabase(fmt.Sprintf("%s::ndau", dbSpec))
 	if err != nil {
 		return nil, errors.Wrap(err, "NewApp failed to create noms db")
 	}
