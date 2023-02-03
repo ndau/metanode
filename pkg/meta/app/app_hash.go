@@ -23,7 +23,19 @@ import (
 //
 // invalid operation app.ds.HeadRef().valueImpl.Hash()[:] (slice of unaddressable value)
 func bytesOfHash(hash hash.Hash) []byte {
-	return []byte(hash[:])
+	// Note - tendermint 0.33 upgrade: Legacy data before genesis
+	// On genesis, the noms is preset with date before genesis in testnet and mainnet. This
+	// makes it impossible to produce the matched app hash if the new tendermint node wants to
+	// sync all of its block from block zero. So this ugly hard coding fix is the work-around
+	// solution to allow block-sync to be continued
+	h := []byte(hash[:])
+	// if hex.EncodeToString(h) == "17af29bb71e0b05c65aa2492337da21d62e9f4d7" {
+	// 	fmt.Printf("Pre-genesis data work-around by forcing app hash\r\n")
+	// 	h, _ = hex.DecodeString("b5826c2ef692f367051d7a074895ee74f7852afc")
+	// }
+	// End Note
+
+	return h
 }
 
 // Hash returns the current hash of the dataset

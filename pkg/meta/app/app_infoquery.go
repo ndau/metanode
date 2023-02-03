@@ -13,6 +13,7 @@ package app
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -24,9 +25,22 @@ import (
 // Info services Info requests
 func (app *App) Info(req abci.RequestInfo) (resInfo abci.ResponseInfo) {
 	app.logRequest("Info", nil)
+
+	// Note - tendermint 0.33 upgrade: Legacy data before genesis
+	// On genesis, the noms is preset with date before genesis in testnet and mainnet. This
+	// makes it impossible to produce the matched app hash if the new tendermint node wants to
+	// sync all of its block from block zero. So this ugly hard coding fix is the work-around
+	// solution to allow block-sync to be continued
+	h := app.Hash()
+	if hex.EncodeToString(h) == "17af29bb71e0b05c65aa2492337da21d62e9f4d7" {
+		fmt.Printf("Pre-genesis data work-around by forcing app hash\r\n")
+		h, _ = hex.DecodeString("b5826c2ef692f367051d7a074895ee74f7852afc")
+	}
+	// End Note
+
 	return abci.ResponseInfo{
 		LastBlockHeight:  int64(app.Height()),
-		LastBlockAppHash: app.Hash(),
+		LastBlockAppHash: h,
 	}
 }
 

@@ -12,6 +12,7 @@
 package app
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/ndau/metanode/pkg/meta/app/code"
@@ -37,6 +38,8 @@ type IncrementalIndexer interface {
 // This includes saving the initial validator set in the local state.
 func (app *App) InitChain(req abci.RequestInitChain) (response abci.ResponseInitChain) {
 	logger := app.logRequestBare("InitChain", nil)
+	// Debug
+	fmt.Printf("req init chain %+v", req)
 
 	// now add the initial validators set
 	for _, v := range req.Validators {
@@ -128,11 +131,13 @@ func (app *App) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 
 // DeliverTx services DeliverTx requests
 func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.ResponseDeliverTx) {
+	// fmt.Printf("Deliver Tx....................................................%+v\r\n", request.Tx)
 	var tx metatx.Transactable
 	var err error
 	var logger log.FieldLogger
 
 	tx, response.Code, logger, err = app.validateTransactable(request.Tx)
+	fmt.Printf("Deliver Tx - metax....................................................%+v\r\n", tx)
 
 	logger = app.requestLogger("DeliverTx", true, logger)
 
@@ -157,6 +162,7 @@ func (app *App) DeliverTx(request abci.RequestDeliverTx) (response abci.Response
 	}
 	app.checkChild()
 	err = tx.Apply(app.childApp)
+	fmt.Printf("Deliver Tx - after apply....................................................%+v\r\n", tx)
 	if err == nil {
 		// wrap the deferred thunks in a format that app.UpdateState can call
 		wthunks := make([]func(metast.State) (metast.State, error), 0, len(app.deferredThunks))
@@ -222,6 +228,7 @@ func (app *App) Commit() abci.ResponseCommit {
 			logger.Error("Commit erred")
 		} else {
 			logger.Info("Commit completed successfully")
+			fmt.Printf("Debug.............Commit completed successfully, app hash: %v\r\n", hex.EncodeToString(app.Hash()))
 		}
 	}
 	defer finalizeLogger()

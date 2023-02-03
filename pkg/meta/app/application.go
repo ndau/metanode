@@ -154,17 +154,20 @@ func NewAppWithLogger(dbSpec string, name string, childState metast.State, txIDs
 		dbSpec = "mem"
 	}
 
-	_, err := spec.ForDatabase(dbSpec)
+	sp, err := spec.ForDatabase(dbSpec)
 	if err != nil {
 		fmt.Printf("Could not access database: %s\n", dbSpec)
 		return nil, errors.Wrap(err, "Could not access database")
 	}
 
-	db_name := fmt.Sprintf("%s::ndau", dbSpec)
-	sp, err := spec.ForDataset(db_name)
+	sp, err = spec.ForDataset(fmt.Sprintf("%s::%s", dbSpec, name))
 	if err != nil {
-		fmt.Printf("Could not create dataset: %s - %v\n", db_name, err)
+		fmt.Printf("Could not create dataset: %s - %v\n", name, err)
 		return nil, errors.Wrap(err, "NewApp failed to create noms ndau db")
+	} else {
+		if _, ok := sp.GetDataset().MaybeHeadValue(); !ok {
+			fmt.Printf("NewApp db doesn't have haed value\n")
+		}
 	}
 
 	var db datas.Database
