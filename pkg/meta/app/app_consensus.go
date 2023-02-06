@@ -223,7 +223,9 @@ func (app *App) Commit() abci.ResponseCommit {
 			logger.Error("Commit erred")
 		} else {
 			logger.Info("Commit completed successfully")
-			fmt.Printf("Debug.............Commit completed successfully, app hash: %v\r\n", hex.EncodeToString(app.Hash()))
+			logger = app.DecoratedLogger().WithFields(log.Fields{
+				"Debug.... app hash": hex.EncodeToString(app.Hash()),
+			})
 		}
 	}
 	defer finalizeLogger()
