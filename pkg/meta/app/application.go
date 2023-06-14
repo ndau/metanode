@@ -9,7 +9,7 @@
 
 // This file contains the basic definition for an ABCI Application.
 //
-// Interface: https://godoc.org/github.com/tendermint/tendermint/abci/types#Application
+// Interface: https://godoc.org/github.com/oneiro-ndev/tendermint.0.32.3/abci/types#Application
 
 package app
 
@@ -29,7 +29,7 @@ import (
 	"github.com/ndau/noms/go/spec"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/oneiro-ndev/tendermint.0.32.3/abci/types"
 )
 
 // ensure the app is a TM Application

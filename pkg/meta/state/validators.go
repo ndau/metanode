@@ -15,9 +15,9 @@ import (
 
 	"github.com/ndau/noms/go/datas"
 	"github.com/pkg/errors"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	tmconv "github.com/tendermint/tendermint/types"
+	abci "github.com/oneiro-ndev/tendermint.0.32.3/abci/types"
+	"github.com/oneiro-ndev/tendermint.0.32.3/crypto"
+	tmconv "github.com/oneiro-ndev/tendermint.0.32.3/types"
 )
 
 // UpdateValidator updates the app's internal state with the given validator
@@ -54,7 +54,7 @@ func (state *Metastate) GetValidators() (validators []abci.Validator, err error)
 		// in the TM source, so we should expect this to break.
 		// OTOH, there's apparently no stable way to make this conversion happen,
 		// so here we are.
-		// https://github.com/tendermint/tendermint/blob/0c9c3292c918617624f6f3fbcd95eceade18bcd5/types/protobuf.go#L170-L171
+		// https://github.com/oneiro-ndev/tendermint.0.32.3/blob/0c9c3292c918617624f6f3fbcd95eceade18bcd5/types/protobuf.go#L170-L171
 		var tcpk crypto.PubKey
 		tcpk, err = tmconv.PB2TM.PubKey(pk)
 		if err != nil {

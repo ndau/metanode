@@ -14,8 +14,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmconv "github.com/tendermint/tendermint/types"
+	abci "github.com/oneiro-ndev/tendermint.0.32.3/abci/types"
+	tmconv "github.com/oneiro-ndev/tendermint.0.32.3/types"
 )
 
 // ValUpdateToVal is a test helper which converts between these equivalent types

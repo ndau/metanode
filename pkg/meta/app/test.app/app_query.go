@@ -14,7 +14,7 @@ import (
 	"encoding/binary"
 
 	meta "github.com/ndau/metanode/pkg/meta/app"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/oneiro-ndev/tendermint.0.32.3/abci/types"
 )
 
 func init() {

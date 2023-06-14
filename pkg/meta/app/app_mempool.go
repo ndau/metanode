@@ -18,7 +18,7 @@ import (
 	"github.com/ndau/metanode/pkg/meta/app/code"
 	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 	log "github.com/sirupsen/logrus"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/oneiro-ndev/tendermint.0.32.3/abci/types"
 )
 
 func (app *App) validateTransactable(bytes []byte) (metatx.Transactable, uint32, log.FieldLogger, error) {

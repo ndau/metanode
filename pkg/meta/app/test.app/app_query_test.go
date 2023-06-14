@@ -16,7 +16,7 @@ import (
 
 	"github.com/ndau/metanode/pkg/meta/app/code"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/oneiro-ndev/tendermint.0.32.3/abci/types"
 )
 
 func Test_valueQuery(t *testing.T) {

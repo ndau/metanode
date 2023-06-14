@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/oneiro-ndev/tendermint.0.32.3/abci/types"
 )
 
 // UpdateValidator updates the app's internal state with the given validator

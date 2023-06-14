@@ -18,7 +18,7 @@ import (
 	"github.com/ndau/metanode/pkg/meta/app/code"
 	metatx "github.com/ndau/metanode/pkg/meta/transaction"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/oneiro-ndev/tendermint.0.32.3/abci/types"
 )
 
 func issueBlock(t *testing.T, app *TestApp, height uint64, txs ...metatx.Transactable) {
