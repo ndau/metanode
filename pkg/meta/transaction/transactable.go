@@ -9,7 +9,6 @@ package metatx
 // https://www.apache.org/licenses/LICENSE-2.0.txt
 // - -- --- ---- -----
 
-
 import (
 	"crypto/md5"
 	"encoding/base64"
@@ -20,6 +19,7 @@ import (
 	"github.com/ndau/ndaumath/pkg/signature"
 	"github.com/pkg/errors"
 	"github.com/tinylib/msgp/msgp"
+	"golang.org/x/crypto/sha3"
 )
 
 // Transactable is the transaction type that the app actually cares about.
@@ -173,6 +173,16 @@ func Marshal(txab Transactable, idMap TxIDMap) ([]byte, error) {
 func Hash(txab Transactable) string {
 	sum := md5.Sum(txab.SignableBytes())
 	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
+
+// HashKeccak256 computes an Ethereum-compatible sha3 Keccak256 hash of the Transactable.
+//
+// This is intended for interacting with the Ethereum blockchain
+
+func HashKeccak256(txab Transactable) string {
+	keccak256 := sha3.NewLegacyKeccak256()
+	keccak256.Write(txab.SignableBytes())
+	return base64.RawURLEncoding.EncodeToString(keccak256.Sum(nil))
 }
 
 // Sign the Transactable with the given private key
